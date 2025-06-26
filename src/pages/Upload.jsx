@@ -11,8 +11,8 @@ import GreenShadowBG from "../assets/images/green-shadow-bg.webp";
 
 const Upload = () => {
     const [isFileUpload, setIsFileUpload] = useState(false);
-
     const { register, reset, handleSubmit, formState: { errors, isSubmitting }, clearErrors } = useForm();
+    const [linkValue, setLinkValue] = useState("");
 
     const onSubmit = async (data) => {
         const formData = new FormData();
@@ -45,6 +45,7 @@ const Upload = () => {
             });
 
             reset();
+            setLinkValue("");
 
             toast.success(response.data.message, {
                 position: "top-center",
@@ -182,35 +183,16 @@ const Upload = () => {
                                         {errors.tarck_title && <span className="text-red-500">{errors.tarck_title.message}</span>}
                                     </div>
                                 </div>
-                                <div className="w-full flex items-stretch gap-5">
-                                    {isFileUpload ? (
-                                        <input
-                                            type="file"
-                                            autoComplete="off"
-                                            accept="audio/*"
-                                            multiple
-                                            className="w-full px-[15px] py-[10px] bg-[#171717] text-white rounded-[10px] focus:outline-none focus:ring-2 focus:ring-green-500"
-                                            {...register('audio', {
-                                                required: "File is required",
-                                                validate: validateAudioFile,
-                                            })}
-                                        />
-                                    ) : (
-                                        <input
-                                            type="text"
-                                            autoComplete="off"
-                                            placeholder="Paste file link here."
-                                            className="w-full p-[15px] bg-[#171717] text-white text-base leading-4 font-Roboto font-normal rounded-[10px] focus:outline-none focus:ring-2 focus:ring-green-500"
-                                            {...register('audio', { required: "File link is required", validate: validateAudioLink })}
-                                        />
-                                    )}
-                                    <button
-                                        type="button"
-                                        className="bg-[#171717] text-white p-3 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        onClick={toggleInputMode}
-                                    >
-                                        {isFileUpload ? <LinkIcon width={20} height={20} /> : <FolderIcon width={20} height={20} />}
-                                    </button>
+                                <div className="w-full flex items-stretch gap-2">
+                                    <input
+                                        type="text"
+                                        autoComplete="off"
+                                        placeholder="Paste WeTransfer / Google Drive or Dropbox link here..."
+                                        className="w-full p-[15px] bg-[#171717] text-white text-base leading-4 font-Roboto font-normal rounded-[10px] focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        {...register('audio', { required: "Google Drive link is required", validate: validateAudioLink })}
+                                        value={linkValue}
+                                        onChange={e => setLinkValue(e.target.value)}
+                                    />
                                 </div>
                                 {errors.audio && <span className="text-red-500">{errors.audio.message}</span>}
                                 <div className="w-full">
@@ -234,7 +216,7 @@ const Upload = () => {
                                     />
                                 </div>
                                 <button type='submit' disabled={isSubmitting} className='primary-gradient transition-all duration-300 ease-in-out active:scale-95 font-Montserrat font-medium text-base leading-4 text-white h-[48px] px-12 w-fit flex items-center justify-center rounded-full'>
-                                    {isSubmitting ? "Sending..." : "Send File"}
+                                    {isSubmitting ? "Submitting..." : "Submit"}
                                 </button>
                             </form>
                         </div>
