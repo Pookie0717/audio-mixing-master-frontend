@@ -157,7 +157,7 @@ const Products = () => {
                 <div className='relative z-20 p-8 bg-[#0B1306] px-5 md:px-10 xl:px-0'>
                     <div className='max-w-[1110px] mx-auto'>
                         <h1 className="font-THICCCBOI-Medium text-[40px] leading-[50px] font-medium mb-7">All Services</h1>
-                        <p className='font-Roboto font-normal text-base leading-6'><Link to={'/services'}>Services</Link> / <span className='text-[#4CC800] font-semibold'>All Services</span></p>
+                        <p className='font-Roboto font-normal text-base leading-6'><Link to={'/select-services'}>Services</Link> / <span className='text-[#4CC800] font-semibold'>All Services</span></p>
                     </div>
                 </div>
             </section>
@@ -188,13 +188,24 @@ const Products = () => {
                     ) : (
                         <>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-16">
-                                {products.map(product => (
+                                {(products && products.length > 0
+                                    ? [...products].sort((a, b) => {
+                                        if (activeTag == 'subscription-based-service') {
+                                            // Sort by price ascending
+                                            return (Number(a.discounted_price) || Number(a.price)) - (Number(b.discounted_price) || Number(b.price));
+                                        } else if (a.category_id && b.category_id) {
+                                            return a.category_id - b.category_id;
+                                        }
+                                        return 0;
+                                    })
+                                    : products
+                                ).map(product => (
                                     <div key={product.id} className='flex flex-col items-center justify-center gap-5'>
                                         <div className='relative top-0 w-full group bg-black rounded-[20px]'>
                                             {
                                                 <span className='bg-[#0B1306] text-[#4CC800] py-2 px-5 shadow-[0px 4px 24px 0px #4CC80033] rounded-full font-THICCCBOI-Medium font-medium text-[12px] leading-4 absolute -top-4 z-20 left-[10%]'>{product.label_name}</span>
                                             }
-                                            <Link to={"/services/" + product.name.toLowerCase().replace(/ /g, "-") + `-p${product.id}`} state={{ service_id: product.id }} prefetch={"intent"} className='block w-full overflow-hidden rounded-[20px]'>
+                                            <Link to={"/select-services/" + product.name.toLowerCase().replace(/ /g, "-") + `-p${product.id}`} state={{ service_id: product.id }} prefetch={"intent"} className='block w-full overflow-hidden rounded-[20px]'>
                                                 <img
                                                     src={`${Number(product.is_url) ? product.image : DOMAIN + product.image}`}
                                                     className='w-full relative top-0 z-10 transition-transform transform group-hover:scale-125 h-72 object-cover object-center'
@@ -216,7 +227,7 @@ const Products = () => {
                                                 )
                                             }
                                         </div>
-                                        <Link to={"/services/" + product.name.toLowerCase().replace(/ /g, "-") + `-p${product.id}`} state={{ service_id: product.id }} prefetch={"intent"} className='block w-full'>
+                                        <Link to={"/select-services/" + product.name.toLowerCase().replace(/ /g, "-") + `-p${product.id}`} state={{ service_id: product.id }} prefetch={"intent"} className='block w-full'>
                                             <div className='w-full'>
                                                 <h4 className='font-THICCCBOI-Bold font-bold text-lg leading-9 line-clamp-1'>{product.name}</h4>
                                                 <div className='flex justify-between items-center'>

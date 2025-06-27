@@ -10,7 +10,7 @@ import { selectUser } from '../reducers/authSlice';
 const navigation = [
   { name: 'Home', href: '/' },
   { name: 'Upload', href: '/upload' },
-  { name: 'Services', href: '/services' },
+  { name: 'Services', href: '/select-services' },
   { name: 'Samples', href: '/samples' },
   { name: 'About', href: '/about' },
   { name: 'FAQ', href: '/faq' },

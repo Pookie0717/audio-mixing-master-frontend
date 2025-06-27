@@ -61,12 +61,12 @@ const Footer = () => {
                 <div className="max-w-[666px] mx-auto">
                     <ul className="flex items-center justify-center gap-y-5 gap-x-10 md:gap-10 flex-wrap md:flex-nowrap">
                         <li><Link to={`/upload`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">Upload</Link></li>
-                        <li><Link to={`/services`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">Services</Link></li>
+                        <li><Link to={`/select-services`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">Services</Link></li>
                         <li><Link to={`/samples`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">Samples</Link></li>
+                        <li><Link to={`/about`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">About</Link></li>
                         <li><Link to={`/faq`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">FAQ</Link></li>
                         <li><Link to={`/reviews`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">Reviews</Link></li>
                         <li><Link to={`/contact`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">Contact</Link></li>
-                        <li><Link to={`/about`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">About</Link></li>
                         <li><Link to={`https://zetdigitesting.online/blog/`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">Blog</Link></li>
                     </ul>
                 </div>

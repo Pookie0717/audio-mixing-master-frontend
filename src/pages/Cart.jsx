@@ -624,7 +624,7 @@ const Cart = () => {
                             <h1 className="text-3xl font-bold mb-4">No items in the cart</h1>
                             <p className="text-xl">Start shopping to add items to your cart.</p>
                             <Link
-                                to="/services"
+                                to="/select-services"
                                 className="primary-gradient font-Montserrat text-base leading-4 font-medium py-3 px-4 rounded-full w-fit mx-auto text-center block mt-8 transition-all duration-300 ease-in-out active:scale-95"
                             >
                                 Go to Services

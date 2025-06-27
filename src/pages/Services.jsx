@@ -248,7 +248,7 @@ export default function Services() {
                                                 </div>
 
                                                 <div className="w-full flex justify-between items-center">
-                                                    <RouterLink to="/services-all" className="font-Montserrat font-medium text-sm md:text-base leading-4 rounded-full py-3 md:py-4 px-4 sm:px-6 border">
+                                                    <RouterLink to="/services" className="font-Montserrat font-medium text-sm md:text-base leading-4 rounded-full py-3 md:py-4 px-4 sm:px-6 border">
                                                         View All Services
                                                     </RouterLink>
 
@@ -318,7 +318,7 @@ export default function Services() {
                                                                     >
                                                                         <div className="flex items-center justify-between w-2/3">
                                                                             <RouterLink
-                                                                                to={"/services/" + pkg.name.toLowerCase().replace(/ /g, "-") + `-p${pkg.id}`}
+                                                                                to={"/select-services/" + pkg.name.toLowerCase().replace(/ /g, "-") + `-p${pkg.id}`}
                                                                                 state={{ service_id: pkg.id }}
                                                                                 className="flex flex-col items-start justify-between"
                                                                             >
@@ -363,7 +363,7 @@ export default function Services() {
                                                         </>
                                                     )}
                                                     <div className="w-full flex justify-between items-center mt-8">
-                                                        <RouterLink to="/services-all" className="font-Montserrat font-medium text-sm md:text-base leading-4 rounded-full py-3 md:py-4 px-4 sm:px-6 border">
+                                                        <RouterLink to="/services" className="font-Montserrat font-medium text-sm md:text-base leading-4 rounded-full py-3 md:py-4 px-4 sm:px-6 border">
                                                             View All Services
                                                         </RouterLink>
                                                         <RouterLink

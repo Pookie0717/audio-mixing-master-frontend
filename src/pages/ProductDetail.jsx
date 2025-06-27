@@ -204,7 +204,7 @@ const ProductDetail = () => {
                 </picture>
                 <div className='relative z-20 bg-[#0B1306] p-8 px-5 md:px-10 xl:px-0'>
                     <div className='max-w-[1110px] mx-auto'>
-                        <p className='font-Roboto font-normal text-base leading-6'><Link to={'/services-all'}>Services</Link> / <span className='text-[#4CC800] font-semibold'>Services Details</span></p>
+                        <p className='font-Roboto font-normal text-base leading-6'><Link to={'/services'}>Services</Link> / <span className='text-[#4CC800] font-semibold'>Services Details</span></p>
                     </div>
                 </div>
             </section>

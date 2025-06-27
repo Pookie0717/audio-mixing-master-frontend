@@ -289,7 +289,7 @@ export default function Home() {
               <source srcSet={GetStartedImage} type="image/webp" />
               <img src={GetStartedImage} className='rounded-lg md:rounded-[30px] relative z-20' alt="Get Started Image" />
             </picture>
-            <Link to={"/services"} className="text-base leading-none text-center font-Montserrat font-medium primary-gradient transition-all duration-300 ease-in-out active:scale-95 block mx-auto py-4 px-12 text-white rounded-full mt-3  relative z-20">Get Started</Link>
+            <Link to={"/select-services"} className="text-base leading-none text-center font-Montserrat font-medium primary-gradient transition-all duration-300 ease-in-out active:scale-95 block mx-auto py-4 px-12 text-white rounded-full mt-3  relative z-20">Get Started</Link>
           </div>
         </div>
       </section>

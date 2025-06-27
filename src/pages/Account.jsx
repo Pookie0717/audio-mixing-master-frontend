@@ -92,7 +92,7 @@ const Account = () => {
                             Account
                         </h1>
                         <p className="font-Roboto font-normal text-base leading-6">
-                            <Link to="/services">Services</Link> /{" "}
+                            <Link to="/select-services">Services</Link> /{" "}
                             <span className="text-[#4CC800] font-semibold">Account</span>
                         </p>
                     </div>

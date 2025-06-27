@@ -134,7 +134,7 @@ const Favorites = () => {
                                                 {favorite?.label_name}
                                             </span>
                                         )}
-                                        <Link to={`/services/${favorite.name.toLowerCase().replace(/ /g, "-")}-p${favorite.service_id}`} state={{ service_id: favorite.service_id }} className='block w-full overflow-hidden rounded-[20px]'>
+                                        <Link to={`/select-services/${favorite.name.toLowerCase().replace(/ /g, "-")}-p${favorite.service_id}`} state={{ service_id: favorite.service_id }} className='block w-full overflow-hidden rounded-[20px]'>
                                             <img src={`${Number(favorite.is_url) ? favorite.image : DOMAIN + favorite.image}`} className='w-full relative top-0 z-10 transition-transform transform group-hover:scale-125 h-72 object-cover object-center' alt={favorite?.name} />
                                         </Link>
                                         {user && (
@@ -144,7 +144,7 @@ const Favorites = () => {
                                         )}
                                     </div>
 
-                                    <Link to={`/services/${favorite.name.toLowerCase().replace(/ /g, "-")}-p${favorite.service_id}`} state={{ service_id: favorite.service_id }} className='block w-full'>
+                                    <Link to={`/select-services/${favorite.name.toLowerCase().replace(/ /g, "-")}-p${favorite.service_id}`} state={{ service_id: favorite.service_id }} className='block w-full'>
                                         <div className='w-full'>
                                             <h4 className='font-THICCCBOI-Bold font-bold text-lg leading-9 line-clamp-1'>{favorite?.name}</h4>
                                             <div className='flex justify-between items-center'>
