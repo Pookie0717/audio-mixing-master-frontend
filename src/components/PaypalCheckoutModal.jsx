@@ -3,14 +3,14 @@ import PropTypes from 'prop-types';
 import { RxCross2 } from 'react-icons/rx';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
-const cardIcons = [
-  { src: '/src/assets/images/apple-pay.png', alt: 'Apple Pay' },
-  { src: '/src/assets/images/google-pay.png', alt: 'Google Pay' },
-  { src: '/src/assets/images/credit-logo.png', alt: 'CreditCard' },
-  { src: '/src/assets/images/debit-logo.png', alt: 'DebitCard' },
-  { src: '/src/assets/images/visa-logo.png', alt: 'Visa' },
-  { src: '/src/assets/images/amex-logo.png', alt: 'Amex' },
-];
+// const cardIcons = [
+//   { src: '/src/assets/images/apple-pay.png', alt: 'Apple Pay' },
+//   { src: '/src/assets/images/google-pay.png', alt: 'Google Pay' },
+//   { src: '/src/assets/images/credit-logo.png', alt: 'CreditCard' },
+//   { src: '/src/assets/images/debit-logo.png', alt: 'DebitCard' },
+//   { src: '/src/assets/images/visa-logo.png', alt: 'Visa' },
+//   { src: '/src/assets/images/amex-logo.png', alt: 'Amex' },
+// ];
 
 const PAYPAL_CLIENT_ID = 'YOUR_CLIENT_ID'; // Replace with your actual client ID
 
@@ -38,7 +38,7 @@ const PaypalCheckoutModal = ({
         <div className="flex flex-col gap-3 mb-4">
           <PayPalScriptProvider options={{ 'client-id': PAYPAL_CLIENT_ID }}>
             <PayPalButtons
-              style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' }}
+              style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal'}}
               createOrder={(data, actions) => {
                 return actions.order.create({
                   purchase_units: [{ amount: { value: price } }]
@@ -49,13 +49,12 @@ const PaypalCheckoutModal = ({
             />
           </PayPalScriptProvider>
         </div>
-        <div className="flex items-center my-4">
+        {/* <div className="flex items-center my-4">
           <div className="flex-grow border-t border-gray-300"></div>
           <span className="mx-3 text-gray-400 font-semibold">OR</span>
           <div className="flex-grow border-t border-gray-300"></div>
-        </div>
-        <div className="flex justify-center gap-2 mt-2">
-          {/* Card icons */}
+        </div> */}
+        {/* <div className="flex justify-center gap-2 mt-2">
           {cardIcons.map((icon) => (
             <img
               key={icon.alt}
@@ -65,7 +64,7 @@ const PaypalCheckoutModal = ({
               style={{ filter: 'grayscale(0.2)' }}
             />
           ))}
-        </div>
+        </div> */}
       </div>
     </div>
   );
