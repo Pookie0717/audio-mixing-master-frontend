@@ -7,7 +7,7 @@ import axios from 'axios';
 import PropTypes from 'prop-types';
 import { selectUserInfo } from '../reducers/userSlice';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
+import { Elements, useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
 import { API_ENDPOINT } from '../utils/constants';
 
 // Initialize Stripe with your publishable key
@@ -21,7 +21,14 @@ const SubscriptionModalContent = ({ product, onClose }) => {
     const [clientSecret, setClientSecret] = useState('');
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('paypal');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [subscriptionId, setSubscriptionId] = useState("");
+    const [subscriptionId, setSubscriptionId] = useState('');
+    
+    // Guest checkout state
+    const [isGuestCheckout, setIsGuestCheckout] = useState(false);
+    const [guestInfo, setGuestInfo] = useState({
+        email: '',
+        phone: ''
+    });
 
     useEffect(() => {
         paypalDispatch({
@@ -77,9 +84,11 @@ const SubscriptionModalContent = ({ product, onClose }) => {
     };
 
     const onApproveSubscription = (data, actions) => {
+        setIsProcessing(true);
         return actions.subscription.get().then(async (details) => {
+            setSubscriptionId(details.id);
             const subscriptionDetails = {
-                user_id: userInfo.id,
+                user_id: user ? userInfo.id : 'guest',
                 cartItems: [
                     {
                         service_id: product.id.toString(),
@@ -89,14 +98,15 @@ const SubscriptionModalContent = ({ product, onClose }) => {
                         total_price: Number(product.discounted_price) || Number(product.price),
                         service_type: product.service_type,
                         paypal_plan_id: product.paypal_plan_id,
-                        stripe_plan_id: product.stripe_plan_id
+                        stripe_plan_id: product.stripe_plan_id,
                     }
                 ],
                 transaction_id: details.id,
-                amount: details.billing_info.last_payment.amount.value,
+                amount: Number(product.discounted_price) || Number(product.price),
                 promoCode: "", // If you have a promo code logic, replace it accordingly
-                payer_name: details.subscriber.name.given_name + " " + details.subscriber.name.surname,
-                payer_email: details.subscriber.email_address,
+                payer_name: user ? userInfo.first_name + " " + userInfo.last_name : guestInfo.first_name + " " + guestInfo.last_name,
+                payer_email: user ? userInfo.email : guestInfo.email,
+                payer_phone: user ? (userInfo.phone || '') : guestInfo.phone,
                 payment_method: "paypal",
                 order_type: "subscription"
             };
@@ -107,7 +117,7 @@ const SubscriptionModalContent = ({ product, onClose }) => {
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'Authorization': `Bearer ${user}`,
+                        ...(user && { Authorization: `Bearer ${user}` }),
                     }
                 });
 
@@ -123,7 +133,6 @@ const SubscriptionModalContent = ({ product, onClose }) => {
                 onClose(); // Close the modal
             } catch (error) {
                 console.error('Error creating order on backend:', error);
-            } finally {
                 setIsProcessing(false);
             }
         }).catch(err => {
@@ -150,7 +159,7 @@ const SubscriptionModalContent = ({ product, onClose }) => {
                     </div>
                     <hr className='border-[#4CC800] my-3' />
 
-                    {user &&
+                    {(user || isGuestCheckout) &&
                         <div className="flex justify-center gap-4 mt-4">
                             <button
                                 onClick={() => setSelectedPaymentMethod('paypal')}
@@ -194,12 +203,90 @@ const SubscriptionModalContent = ({ product, onClose }) => {
                                             isProcessing={isProcessing}
                                             setIsProcessing={setIsProcessing}
                                             subscriptionId={subscriptionId}
+                                            isGuestCheckout={false}
+                                            guestInfo={null}
                                         />
                                     </Elements>
                                 )}
                             </>
+                        ) : !isGuestCheckout ? (
+                            <div className="text-center">
+                                <p className="font-THICCCBOI-SemiBold text-lg mb-4">Choose your checkout option:</p>
+                                <div className="flex flex-col gap-3">
+                                    <Link to="/login" className='primary-gradient font-Montserrat text-base leading-4 font-semibold block mx-auto text-white py-4 px-6 rounded-full w-fit transition-all duration-300 ease-in-out active:scale-95'>Login to subscribe</Link>
+                                    <button
+                                        onClick={() => setIsGuestCheckout(true)}
+                                        className="bg-white text-black font-Montserrat text-base leading-4 font-medium py-4 px-6 rounded-full w-fit mx-auto transition-all duration-300 ease-in-out active:scale-95 border-2 border-gray-300"
+                                    >
+                                        Continue as Guest
+                                    </button>
+                                </div>
+                            </div>
                         ) : (
-                            <Link to="/login" className='primary-gradient font-Montserrat text-base leading-4 font-semibold block mx-auto text-white py-4 px-6 rounded-full w-fit transition-all duration-300 ease-in-out active:scale-95'>Login to subscribe</Link>
+                            <>
+                                {/* Guest Information Form */}
+                                <div className="mb-6">
+                                    <h3 className="font-THICCCBOI-SemiBold text-lg mb-4">Guest Information</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block font-THICCCBOI-SemiBold text-sm mb-2">Email *</label>
+                                            <input
+                                                type="email"
+                                                value={guestInfo.email}
+                                                onChange={(e) => setGuestInfo({...guestInfo, email: e.target.value})}
+                                                className="w-full p-3 bg-[#EDEDED] text-black rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block font-THICCCBOI-SemiBold text-sm mb-2">Phone Number *</label>
+                                            <input
+                                                type="tel"
+                                                value={guestInfo.phone}
+                                                onChange={(e) => setGuestInfo({...guestInfo, phone: e.target.value})}
+                                                className="w-full p-3 bg-[#EDEDED] text-black rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setIsGuestCheckout(false)}
+                                        className="text-green-500 font-THICCCBOI-SemiBold text-sm mt-2 underline"
+                                    >
+                                        ← Back to login options
+                                    </button>
+                                </div>
+
+                                {/* Payment Methods for Guest */}
+                                <>
+                                    {selectedPaymentMethod == 'paypal' && (
+                                        <PayPalButtons
+                                            style={{ layout: 'vertical' }}
+                                            createSubscription={createSubscription}
+                                            onApprove={onApproveSubscription}
+                                            disabled={isProcessing}
+                                            onCancel={handleCancel}
+                                        />
+                                    )}
+
+                                    {selectedPaymentMethod == 'stripe' && clientSecret && (
+                                        <Elements stripe={stripePromise} options={{ clientSecret }}>
+                                            <StripeSubscriptionForm
+                                                product={product}
+                                                userInfo={null}
+                                                clientSecret={clientSecret}
+                                                onClose={onClose}
+                                                navigate={navigate}
+                                                isProcessing={isProcessing}
+                                                setIsProcessing={setIsProcessing}
+                                                subscriptionId={subscriptionId}
+                                                isGuestCheckout={true}
+                                                guestInfo={guestInfo}
+                                            />
+                                        </Elements>
+                                    )}
+                                </>
+                            </>
                         )}
                     </div>
                 </div>
@@ -208,18 +295,52 @@ const SubscriptionModalContent = ({ product, onClose }) => {
     );
 };
 
-const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProcessing, setIsProcessing, subscriptionId }) => {
+const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProcessing, setIsProcessing, subscriptionId, isGuestCheckout, guestInfo }) => {
     const stripe = useStripe();
     const elements = useElements();
     const [error, setError] = useState(null);
+    const [cardComplete, setCardComplete] = useState(false);
     const user = useSelector(selectUser);
+
+    const cardElementOptions = {
+        style: {
+            base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': {
+                    color: '#aab7c4',
+                },
+                iconColor: '#6772e5',
+            },
+            invalid: {
+                color: '#9e2146',
+            },
+        },
+        hidePostalCode: false,
+    };
+
+    const handleCardChange = (event) => {
+        setCardComplete(event.complete);
+        if (event.error) {
+            setError(event.error.message);
+        } else {
+            setError(null);
+        }
+    };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         setIsProcessing(true);
+        setError(null);
 
         if (!stripe || !elements) {
             setError('Stripe is not loaded yet.');
+            setIsProcessing(false);
+            return;
+        }
+
+        if (!cardComplete) {
+            setError('Please complete your card details.');
             setIsProcessing(false);
             return;
         }
@@ -229,6 +350,13 @@ const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProces
                 elements,
                 confirmParams: {
                     return_url: `${window.location.origin}/order-confirmation`,
+                    payment_method_data: {
+                        billing_details: {
+                            name: isGuestCheckout ? guestInfo.first_name + ' ' + guestInfo.last_name : userInfo.first_name + ' ' + userInfo.last_name,
+                            email: isGuestCheckout ? guestInfo.email : userInfo.email,
+                            phone: isGuestCheckout ? guestInfo.phone : (userInfo.phone || ''),
+                        },
+                    },
                 },
                 redirect: 'if_required',
             });
@@ -241,7 +369,7 @@ const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProces
 
             if (paymentIntent && paymentIntent.status == 'succeeded') {
                 const subscriptionDetails = {
-                    user_id: userInfo.id,
+                    user_id: userInfo ? userInfo.id : null,
                     cartItems: [
                         {
                             service_id: product.id.toString(),
@@ -257,8 +385,8 @@ const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProces
                     transaction_id: subscriptionId,
                     amount: paymentIntent.amount / 100,
                     promoCode: "", // If you have a promo code logic, replace it accordingly
-                    payer_name: userInfo.first_name + " " + userInfo.last_name,
-                    payer_email: userInfo.email,
+                    payer_name: userInfo ? (userInfo.first_name + " " + userInfo.last_name) : (guestInfo.first_name + " " + guestInfo.last_name),
+                    payer_email: userInfo ? userInfo.email : guestInfo.email,
                     payment_method: "stripe",
                     order_type: "subscription"
                 };
@@ -294,17 +422,65 @@ const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProces
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <PaymentElement className="bg-white p-3 rounded-md mb-4" disabled={isProcessing} />
-            {error && <div className="text-red-500 mb-3">{error}</div>}
-            <button
-                type="submit"
-                disabled={!stripe || isProcessing}
-                className="bg-[#0D6EFD] font-Montserrat text-white font-normal text-base py-3 rounded-md w-full leading-6"
-            >
-                {isProcessing ? 'Processing...' : `Subscribe Now`}
-            </button>
-        </form>
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+            <div className="mb-4">
+                <h3 className="font-THICCCBOI-SemiBold text-lg mb-2">Card Information</h3>
+                <p className="text-gray-600 text-sm mb-4">Enter your card details to complete the subscription</p>
+            </div>
+            
+            <form onSubmit={handleSubmit}>
+                <div className="mb-4">
+                    <label className="block font-THICCCBOI-SemiBold text-sm mb-2 text-gray-700">
+                        Card Details *
+                    </label>
+                    <div className="border border-gray-300 rounded-md p-3 bg-white">
+                        <CardElement 
+                            options={cardElementOptions}
+                            onChange={handleCardChange}
+                            disabled={isProcessing}
+                        />
+                    </div>
+                </div>
+
+                {error && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-red-600 text-sm">{error}</p>
+                    </div>
+                )}
+
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <div className="flex justify-between items-center">
+                        <span className="font-THICCCBOI-SemiBold text-sm text-gray-700">Subscription Amount:</span>
+                        <span className="font-THICCCBOI-Bold text-lg">${(Number(product.discounted_price) || Number(product.price)).toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <button
+                    type="submit"
+                    disabled={!stripe || !cardComplete || isProcessing}
+                    className={`w-full py-3 px-4 rounded-md font-Montserrat text-base font-medium transition-all duration-200 ${
+                        !stripe || !cardComplete || isProcessing
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-[#0D6EFD] text-white hover:bg-[#0b5ed7] active:scale-95'
+                    }`}
+                >
+                    {isProcessing ? (
+                        <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Processing Subscription...
+                        </div>
+                    ) : (
+                        `Subscribe Now`
+                    )}
+                </button>
+
+                <div className="mt-4 text-center">
+                    <p className="text-xs text-gray-500">
+                        Your payment is secured by Stripe. We never store your card details.
+                    </p>
+                </div>
+            </form>
+        </div>
     );
 };
 
@@ -315,12 +491,14 @@ SubscriptionModalContent.propTypes = {
 
 StripeSubscriptionForm.propTypes = {
     product: PropTypes.object.isRequired,
-    userInfo: PropTypes.object.isRequired,
+    userInfo: PropTypes.object,
     onClose: PropTypes.func.isRequired,
     navigate: PropTypes.func.isRequired,
     isProcessing: PropTypes.bool.isRequired,
     setIsProcessing: PropTypes.func.isRequired,
     subscriptionId: PropTypes.string,
+    isGuestCheckout: PropTypes.bool,
+    guestInfo: PropTypes.object,
 };
 
 export default SubscriptionModalContent;

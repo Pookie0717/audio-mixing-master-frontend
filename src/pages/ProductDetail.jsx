@@ -126,6 +126,7 @@ const ProductDetail = () => {
             return;
         }
 
+        console.log(pkg);
         const productToAdd = {
             service_id: pkg.id,
             service_name: pkg.name,

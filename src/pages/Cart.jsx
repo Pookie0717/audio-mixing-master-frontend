@@ -22,6 +22,9 @@ import GreenShadowBG from '../assets/images/green-shadow-bg.webp';
 import { selectUserInfo } from '../reducers/userSlice';
 import { RxCross2 } from 'react-icons/rx';
 import { API_ENDPOINT } from '../utils/constants';
+import PaypalCheckoutModal from '../components/PaypalCheckoutModal';
+import StripeCheckoutModal from '../components/StripeCheckoutModal';
+import ChoosePaymentMethodModal from '../components/ChoosePaymentMethodModal';
 
 // Initialize Stripe with your publishable key
 const stripePromise = loadStripe('pk_test_51MuE4RJIWkcGZUIabXuoFFrr5gMT5S9Ynq63FfkoZMVeEkq94UdXOKwK4t3msKIsQwnLwafv9JyvzIdKpbsFonwd00BWb4lWdj');
@@ -34,21 +37,19 @@ const Cart = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [clientSecret, setClientSecret] = useState('');
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('paypal');
     const [isProcessing, setIsProcessing] = useState(false);
-
-    // Discount State
     const [promoCode, setPromoCode] = useState('');
     const [promoCodeApplied, setPromoCodeApplied] = useState('');
     const [discount, setDiscount] = useState(0);
     const [discountType, setDiscountType] = useState('');
     const [matchedProductIds, setMatchedProductIds] = useState([]);
     const [isGeneralCoupon, setIsGeneralCoupon] = useState(false);
-    const [couponType, setCouponType] = useState(''); // Added state for coupon type
-
-    // PayPal Part Here
+    const [couponType, setCouponType] = useState('');
     const [{ options }, paypalDispatch] = usePayPalScriptReducer();
+    const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+    const [isChoosePaymentModalOpen, setIsChoosePaymentModalOpen] = useState(false);
+    const [isPayPalModalOpen, setIsPayPalModalOpen] = useState(false);
+    const [isCardModalOpen, setIsCardModalOpen] = useState(false);
 
     useEffect(() => {
         paypalDispatch({
@@ -59,33 +60,6 @@ const Cart = () => {
             },
         });
     }, [cartItems, promoCodeApplied, paypalDispatch, options.currency]);
-
-    useEffect(() => {
-        const fetchClientSecret = async () => {
-            try {
-                const response = await axios.post(
-                    API_ENDPOINT + 'stripe/intent',
-                    {
-                        amount: calculateFinalCost(),
-                        user_id: user.id,
-                        cart_items: cartItems,
-                    },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${user}`,
-                        },
-                    }
-                );
-                setClientSecret(response.data);
-            } catch (error) {
-                console.error('Error fetching client secret:', error);
-            }
-        };
-
-        if (user && cartItems.length > 0 && selectedPaymentMethod == 'stripe') {
-            fetchClientSecret();
-        }
-    }, [cartItems, user, promoCodeApplied, selectedPaymentMethod]);
 
     const handleCancel = (data) => {
         console.log('PayPal payment cancelled', data);
@@ -176,71 +150,6 @@ const Cart = () => {
         return finalAmount > 0 ? finalAmount.toFixed(2) : '0.00';
     };
 
-    const createOrder = (data, actions) => {
-        const finalTotal = calculateFinalCost();
-
-        setIsProcessing(true);
-
-        return actions.order
-            .create({
-                purchase_units: [
-                    {
-                        amount: {
-                            value: finalTotal,
-                        },
-                    },
-                ],
-            })
-            .catch((err) => {
-                console.error('Error creating order:', err);
-                setIsProcessing(false);
-            });
-    };
-
-    const onApprove = async (data, actions) => {
-        return actions.order.capture().then(async (details) => {
-            const transactionDetails = {
-                user_id: userInfo.id.toString(),
-                cartItems: cartItems,
-                transaction_id: details.id,
-                amount: details.purchase_units[0].amount.value,
-                promoCode: promoCodeApplied,
-                payer_name: details.payer.name.given_name + ' ' + details.payer.name.surname,
-                payer_email: details.payer.email_address,
-                payment_type: 'one_time',
-                payment_method: 'paypal',
-                order_type: 'one_time',
-            };
-
-            try {
-                const response = await axios.post(API_ENDPOINT + 'success', transactionDetails, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Accept: 'application/json',
-                        Authorization: `Bearer ${user}`,
-                    },
-                });
-
-                dispatch(clearCart());
-                navigate(`/order-confirmation/${response.data.order_id}`, {
-                    state: {
-                        cartItems,
-                        isPromoCodeApplied: promoCodeApplied ? true : false,
-                        total: calculateFinalCost(),
-                        discountAmount:
-                            cartItems.reduce((acc, item) => acc + parseFloat(item.total_price), 0) -
-                            calculateFinalCost(),
-                        isGiftCard: false,
-                    },
-                });
-                setIsProcessing(false);
-            } catch (error) {
-                console.error('Error creating order on backend:', error);
-                setIsProcessing(false);
-            }
-        });
-    };
-
     const handlePromoCodeApply = async () => {
         setIsLoading(true);
         setError('');
@@ -302,28 +211,23 @@ const Cart = () => {
 
     const isAnyProductUnavailable = cartItems.length == 0;
 
-    const handlePaymentMethodChange = (method) => {
-        setSelectedPaymentMethod(method);
-        setClientSecret('');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handleGiftCardCheckout = async () => {
+    // PayPal approve handler for CheckoutModal
+    const handlePayPalApprove = async (data, actions) => {
         setIsProcessing(true);
-        const transactionDetails = {
-            user_id: userInfo.id.toString(),
-            cartItems: cartItems,
-            transaction_id: promoCodeApplied, // Use the gift code as transaction_id
-            amount: '0.00',
-            promoCode: promoCodeApplied,
-            payer_name: userInfo.first_name + ' ' + userInfo.last_name,
-            payer_email: userInfo.email,
-            payment_type: 'one_time',
-            payment_method: 'wallet', // Set payment method as 'wallet'
-            order_type: 'one_time',
-        };
-
         try {
+            const details = await actions.order.capture();
+            const transactionDetails = {
+                user_id: userInfo.id.toString(),
+                cartItems: cartItems,
+                transaction_id: details.id,
+                amount: details.purchase_units[0].amount.value,
+                promoCode: promoCodeApplied,
+                payer_name: details.payer.name.given_name + ' ' + details.payer.name.surname,
+                payer_email: details.payer.email_address,
+                payment_type: 'one_time',
+                payment_method: 'paypal',
+                order_type: 'one_time',
+            };
             const response = await axios.post(API_ENDPOINT + 'success', transactionDetails, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -331,7 +235,6 @@ const Cart = () => {
                     Authorization: `Bearer ${user}`,
                 },
             });
-
             dispatch(clearCart());
             navigate(`/order-confirmation/${response.data.order_id}`, {
                 state: {
@@ -344,10 +247,11 @@ const Cart = () => {
                     isGiftCard: false,
                 },
             });
-            setIsProcessing(false);
         } catch (error) {
-            console.error('Error creating order on backend:', error);
+            setError('PayPal payment failed.');
+        } finally {
             setIsProcessing(false);
+            setIsCheckoutModalOpen(false);
         }
     };
 
@@ -522,81 +426,18 @@ const Cart = () => {
                                     </div>
                                 </div>
                                 <hr className="border-[#4CC800] my-5" />
-
                                 <div className="bg-[#0B1306] p-4 rounded-lg md:rounded-[20px] mt-4">
                                     {isAnyProductUnavailable ? (
                                         <p className="text-red-500 font-THICCCBOI-SemiBold text-lg md:text-xl leading-6 text-center">
                                             No products available
                                         </p>
-                                    ) : user ? (
-                                        <>
-                                            {calculateFinalCost() == '0.00' && couponType == 'gift' ? (
-                                                <button
-                                                    onClick={handleGiftCardCheckout}
-                                                    disabled={isProcessing}
-                                                    className="primary-gradient font-Montserrat text-base leading-4 font-medium py-3 px-4 rounded-full w-full transition-all duration-300 ease-in-out active:scale-95"
-                                                >
-                                                    {isProcessing ? 'Processing...' : 'Checkout'}
-                                                </button>
-                                            ) : (
-                                                <>
-                                                    <div className="flex justify-center gap-4 mb-8">
-                                                        <button
-                                                            onClick={() => handlePaymentMethodChange('paypal')}
-                                                            className={`w-1/2 py-3 rounded-md ${selectedPaymentMethod == 'paypal'
-                                                                ? 'bg-blue-500 text-white'
-                                                                : 'bg-gray-200 text-black'
-                                                                }`}
-                                                            disabled={isProcessing}
-                                                        >
-                                                            PayPal
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handlePaymentMethodChange('stripe')}
-                                                            className={`w-1/2 py-3 rounded-md ${selectedPaymentMethod == 'stripe'
-                                                                ? 'bg-blue-500 text-white'
-                                                                : 'bg-gray-200 text-black'
-                                                                }`}
-                                                            disabled={isProcessing}
-                                                        >
-                                                            Stripe
-                                                        </button>
-                                                    </div>
-
-                                                    {selectedPaymentMethod == 'paypal' && (
-                                                        <PayPalButtons
-                                                            createOrder={createOrder}
-                                                            onApprove={onApprove}
-                                                            onCancel={handleCancel}
-                                                            disabled={isProcessing}
-                                                        />
-                                                    )}
-                                                    {selectedPaymentMethod == 'stripe' && clientSecret && (
-                                                        <Elements
-                                                            stripe={stripePromise}
-                                                            options={{ clientSecret }}
-                                                            key={clientSecret}
-                                                        >
-                                                            <StripePaymentForm
-                                                                cartItems={cartItems}
-                                                                finalTotal={Number(calculateFinalCost())}
-                                                                promoCodeApplied={promoCodeApplied}
-                                                                calculateFinalCost={calculateFinalCost}
-                                                                isProcessing={isProcessing}
-                                                                setIsProcessing={setIsProcessing}
-                                                            />
-                                                        </Elements>
-                                                    )}
-                                                </>
-                                            )}
-                                        </>
                                     ) : (
-                                        <Link
-                                            to="/login"
-                                            className="primary-gradient font-Montserrat text-base leading-4 font-medium py-3 px-4 rounded-full w-full text-center block transition-all duration-300 ease-in-out active:scale-95"
+                                        <button
+                                            onClick={() => setIsChoosePaymentModalOpen(true)}
+                                            className="primary-gradient font-Montserrat text-base leading-4 font-medium py-3 px-4 rounded-full w-full transition-all duration-300 ease-in-out active:scale-95"
                                         >
-                                            Login to checkout
-                                        </Link>
+                                            CONTINUE TO PAYMENT
+                                        </button>
                                     )}
                                 </div>
                             </div>
@@ -633,6 +474,29 @@ const Cart = () => {
                     </>
                 )}
             </section>
+            <ChoosePaymentMethodModal
+                isOpen={isChoosePaymentModalOpen}
+                onClose={() => setIsChoosePaymentModalOpen(false)}
+                onChoosePayPal={() => {
+                    setIsChoosePaymentModalOpen(false);
+                    setIsPayPalModalOpen(true);
+                }}
+                onChooseCard={() => {
+                    setIsChoosePaymentModalOpen(false);
+                    setIsCardModalOpen(true);
+                }}
+            />
+            <PaypalCheckoutModal
+                isOpen={isPayPalModalOpen}
+                onClose={() => setIsPayPalModalOpen(false)}
+                price={calculateFinalCost()}
+                onPayPalApprove={handlePayPalApprove}
+                isProcessing={isProcessing}
+            />
+            <StripeCheckoutModal
+                isOpen={isCardModalOpen}
+                onClose={() => setIsCardModalOpen(false)}
+            />
         </main>
     );
 };

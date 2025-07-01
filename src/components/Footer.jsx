@@ -91,7 +91,7 @@ const Footer = () => {
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
                         <div className="font-Roboto font-normal text-base">E-Mail: <a href="mailto:support@audiomixingmastering.com">support@audiomixingmastering.com</a></div>
                         <div className="w-2 h-2 bg-white rounded-full hidden sm:block"></div>
-                        <div className="font-Roboto font-normal text-base">Cell: <a href="tel:+316240386772">+31 (63) 403-8672</a></div>
+                        <div className="font-Roboto font-normal text-base">Cell: <a href="tel:+31634038672">+31 (63) 403-8672</a></div>
                     </div>
                 </div>
 

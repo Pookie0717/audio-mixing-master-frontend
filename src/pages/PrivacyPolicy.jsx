@@ -119,7 +119,7 @@ const PrivacyPolicy = () => {
                     <p className="font-DMSANS font-normal text-base mb-4">If you have any questions or concerns regarding this Privacy Policy or how your data is handled, please feel free to contact us:</p>
                     <ul className="font-DMSANS font-normal text-base list-disc ml-5 mb-4">
                         <li>Email: support@audiomixingmastering.com</li>
-                        <li>Phone: +31 6 34 03 86 72</li>
+                        <li><a href="tel:+31634038672">+31 (63) 403-8672</a></li>
                         <li>Address: Tesselschadestraat 27, Leeuwarden, Netherlands, 8913 HA</li>
                     </ul>
                     <p className="font-DMSANS font-normal text-base mb-4">By using our services, you agree to the terms outlined in this Privacy Policy. We are committed to respecting and protecting your privacy while delivering excellent mixing and mastering services.</p>
