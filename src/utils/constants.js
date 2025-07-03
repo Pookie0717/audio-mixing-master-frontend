@@ -1,10 +1,10 @@
-// export const API_ENDPOINT = "https://music.zetdigi.com/backend/public/api/";
-// export const DOMAIN = "https://music.zetdigi.com/backend/public/"
+export const API_ENDPOINT = "https://music.zetdigi.com/backend/public/api/";
+export const DOMAIN = "https://music.zetdigi.com/backend/public/"
 // export const API_ENDPOINT = "https://backend.zetdigitesting.online/api/";
 // export const DOMAIN = "https://backend.zetdigitesting.online/"
 
-export const API_ENDPOINT = "http://127.0.0.1:8000/api/";
-export const DOMAIN = "http://127.0.0.1:8000/";
+// export const API_ENDPOINT = "http://127.0.0.1:8000/api/";
+// export const DOMAIN = "http://127.0.0.1:8000/";
 
 export const itemsPerPage = 10;
 
