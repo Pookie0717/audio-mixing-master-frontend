@@ -16,7 +16,7 @@ const navigation = [
   { name: 'FAQ', href: '/faq' },
   { name: 'Reviews', href: '/reviews' },
   { name: 'Contact', href: '/contact' },
-  { name: 'Blog', href: 'https://zetdigitesting.online/blog/' },
+  { name: 'Blog', href: '/blog' },
 ];
 
 export default function Navbar() {

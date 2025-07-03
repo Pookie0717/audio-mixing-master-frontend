@@ -43,6 +43,7 @@ import RefundPolicy from './pages/RefundPolicy';
 import TermsConditions from './pages/TermsConditions';
 import MFIT from './pages/MFIT';
 import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
 import GiftCard from './pages/GiftCard';
 
 const router = createBrowserRouter([
@@ -71,11 +72,9 @@ const router = createBrowserRouter([
       { path: '/refund-policy', element: <RefundPolicy /> },
       { path: '/terms-and-conditions', element: <TermsConditions /> },
       { path: '/mfit', element: <MFIT /> },
+      { path: '/blog', element: <Blog /> },
+      { path: '/blog/:postId', element: <BlogPost /> },
     ],
-  },
-  {
-    path: '/blog',
-    element: <Blog />
   },
   {
     path: '/login',

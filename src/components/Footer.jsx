@@ -67,7 +67,7 @@ const Footer = () => {
                         <li><Link to={`/faq`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">FAQ</Link></li>
                         <li><Link to={`/reviews`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">Reviews</Link></li>
                         <li><Link to={`/contact`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">Contact</Link></li>
-                        <li><Link to={`https://zetdigitesting.online/blog/`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">Blog</Link></li>
+                        <li><Link to={`/blog`} className="font-Roboto font-normal text-base hover:text-[#4CC800]">Blog</Link></li>
                     </ul>
                 </div>
 
