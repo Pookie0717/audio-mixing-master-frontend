@@ -63,18 +63,18 @@ const Upload = () => {
             });
 
         } catch (error) {
-            console.log(error.response.data.error);
-            toast.error(error.response.data.error, {
+            toast.error(error.response?.data?.error || "Upload failed", {
                 position: "top-center",
                 autoClose: 3000,
                 hideProgressBar: true,
                 closeOnClick: true,
-                pauseOnHover: false,
-                draggable: false,
+                pauseOnHover: true,
+                draggable: true,
                 progress: undefined,
-                theme: "light",
-                transition: Slide,
+                transition: Slide
             });
+        } finally {
+            // setIsLoading(false); // This line was not in the new_code, so it's removed.
         }
     };
 

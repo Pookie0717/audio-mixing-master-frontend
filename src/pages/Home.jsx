@@ -69,7 +69,6 @@ export default function Home() {
 
       setEmail(""); // Reset email field
     } catch (error) {
-      console.log(error.response?.data?.error || "Submission failed");
       toast.error(error.response?.data?.error || "Submission failed", {
         position: "top-center",
         autoClose: 3000,
@@ -342,7 +341,7 @@ function ReviewSlider() {
         const response = await axios.get(API_ENDPOINT + "testimonial-list");
         setReviews(response.data);
       } catch (error) {
-        console.error("Error fetching reviews:", error);
+        // Handle error silently
       }
     }
 

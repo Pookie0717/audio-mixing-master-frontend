@@ -28,7 +28,6 @@ const ReviewPurchaseModal = ({ orderId, seletedOrderItems, amount }) => {
     const [guestErrors, setGuestErrors] = useState({ email: '', phone: '' });
 
     const handleCancel = (data) => {
-        console.log('PayPal payment cancelled', data);
         setIsProcessing(false);
     };
 
@@ -56,7 +55,7 @@ const ReviewPurchaseModal = ({ orderId, seletedOrderItems, amount }) => {
                     });
                     setClientSecret(response.data);
                 } catch (error) {
-                    console.error('Error fetching client secret:', error);
+                    // Handle error silently
                 }
             };
 
@@ -101,7 +100,7 @@ const ReviewPurchaseModal = ({ orderId, seletedOrderItems, amount }) => {
 
                 setIsPaymentComplete(true);
             } catch (error) {
-                console.error('Error creating order on backend:', error);
+                // Handle error silently
             }
             setIsProcessing(false);
         });
@@ -332,8 +331,7 @@ const StripePaymentForm = ({ finalTotal, setIsPaymentComplete, isProcessing, set
                 throw new Error('Payment failed');
             }
         } catch (error) {
-            console.error('Stripe payment error:', error);
-            alert('Payment failed. Please try again.');
+            // Handle error silently
         } finally {
             setIsProcessing(false);
         }

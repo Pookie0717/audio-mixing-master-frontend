@@ -4,6 +4,7 @@ import { ArrowLeftIcon, ClockIcon, UserIcon, CalendarIcon } from '@heroicons/rea
 import Skeleton from 'react-loading-skeleton';
 import PurpleShadowBG from "../assets/images/purple-shadow-bg.webp";
 import GreenShadowBG from "../assets/images/green-shadow-bg.webp";
+// import blogData from '../data/blog-posts.json';
 
 export default function BlogPost() {
     const { postId } = useParams();
@@ -302,12 +303,12 @@ export default function BlogPost() {
                 // Simulate API call
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                const foundPost = sampleBlogPosts.find(p => p.id === parseInt(postId));
+                const foundPost = blogPostsData.find(p => p.id === parseInt(postId));
                 if (foundPost) {
                     setPost(foundPost);
                     
                     // Get related posts (same category, excluding current post)
-                    const related = sampleBlogPosts
+                    const related = blogPostsData
                         .filter(p => p.category === foundPost.category && p.id !== foundPost.id)
                         .slice(0, 3);
                     setRelatedPosts(related);
@@ -315,7 +316,6 @@ export default function BlogPost() {
                 
                 setLoading(false);
             } catch (error) {
-                console.error('Error fetching blog post:', error);
                 setLoading(false);
             }
         };
@@ -421,7 +421,7 @@ export default function BlogPost() {
                     <div className="bg-[#0B1306] rounded-[30px] p-8 mb-12">
                         <div className="mb-8">
                             <img 
-                                src={post.image} 
+                                src={post.image_url} 
                                 alt={post.title}
                                 className="w-full h-[300px] md:h-[400px] object-cover rounded-[20px]"
                             />
@@ -453,7 +453,7 @@ export default function BlogPost() {
                         </p>
 
                         <div className="inline-block bg-[#4DC801] text-white px-4 py-2 rounded-full text-sm font-medium">
-                            {categories.find(cat => cat.id === post.category)?.name}
+                            {categoriesData.find(cat => cat.id === post.category)?.name}
                         </div>
                     </div>
 
@@ -494,12 +494,12 @@ export default function BlogPost() {
                                     <article key={relatedPost.id} className="bg-black rounded-[20px] overflow-hidden hover:transform hover:scale-105 transition-all duration-300">
                                         <div className="relative">
                                             <img 
-                                                src={relatedPost.image} 
+                                                src={relatedPost.image_url} 
                                                 alt={relatedPost.title}
                                                 className="w-full h-48 object-cover"
                                             />
                                             <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-sm font-medium">
-                                                {categories.find(cat => cat.id === relatedPost.category)?.name}
+                                                {categoriesData.find(cat => cat.id === relatedPost.category)?.name}
                                             </div>
                                         </div>
                                         <div className="p-6">

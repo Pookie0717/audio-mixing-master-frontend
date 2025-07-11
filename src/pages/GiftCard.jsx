@@ -30,10 +30,10 @@ const GiftCard = () => {
                 setGiftCards(response.data.data);
                 setCurrentPage(response.data.current_page);
                 setPageCount(response.data.last_page);
-                setLoading(false); // Stop loading
             } catch (error) {
-                console.error('Failed to fetch gift cards:', error);
-                setLoading(false); // Stop loading
+                // Handle error silently
+            } finally {
+                setLoading(false);
             }
         };
 

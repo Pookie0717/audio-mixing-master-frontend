@@ -68,7 +68,7 @@ const OneTimePurchaseModal = ({ product, onClose, quantity }) => {
 
                     setClientSecret(response.data || response.data);
                 } catch (error) {
-                    console.error('Error fetching client secret:', error);
+                    // Handle error silently
                 }
             };
 
@@ -77,7 +77,6 @@ const OneTimePurchaseModal = ({ product, onClose, quantity }) => {
     }, [user, product, userInfo, quantity]);
 
     const handleCancel = (data) => {
-        console.log('PayPal payment cancelled', data);
         setIsProcessing(false);
     };
 
@@ -90,7 +89,6 @@ const OneTimePurchaseModal = ({ product, onClose, quantity }) => {
                 },
             }],
         }).catch((err) => {
-            console.error('Error creating order:', err);
             setIsProcessing(false);
         });
     };
@@ -109,7 +107,7 @@ const OneTimePurchaseModal = ({ product, onClose, quantity }) => {
             
             await processOrder(paymentDetails, "paypal");
         } catch (error) {
-            console.error('PayPal payment error:', error);
+            // Handle error silently
             setIsProcessing(false);
         }
     };
@@ -159,9 +157,7 @@ const OneTimePurchaseModal = ({ product, onClose, quantity }) => {
             });
             onClose(); // Close the modal
         } catch (error) {
-            console.error('Error creating order on backend:', error);
-            setError('Order confirmation failed. Please contact support.');
-            setIsProcessing(false);
+            // Handle error silently
         }
     };
 
@@ -443,9 +439,7 @@ const StripePaymentForm = ({ product, userInfo, onClose, navigate, isProcessing,
             });
             onClose(); // Close the modal
         } catch (error) {
-            console.error('Error creating order on backend:', error);
-            setError('Order confirmation failed. Please contact support.');
-            setIsProcessing(false);
+            // Handle error silently
         }
     };
 

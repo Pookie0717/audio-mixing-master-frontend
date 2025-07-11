@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
     getCartItems,
@@ -8,13 +8,14 @@ import {
     updateCart,
     removeFromCart,
     clearCart,
+    fetchCartItems,
 } from '../reducers/cartSlice';
-import { selectUser } from '../reducers/authSlice';
+import { selectUser, getUserToken } from '../reducers/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
 import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import { PlusIcon, MinusIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
-import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
+import { Elements, useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 
 import PurpleShadowBG from '../assets/images/purple-shadow-bg.webp';
@@ -22,9 +23,6 @@ import GreenShadowBG from '../assets/images/green-shadow-bg.webp';
 import { selectUserInfo } from '../reducers/userSlice';
 import { RxCross2 } from 'react-icons/rx';
 import { API_ENDPOINT } from '../utils/constants';
-import PaypalCheckoutModal from '../components/PaypalCheckoutModal';
-import StripeCheckoutModal from '../components/StripeCheckoutModal';
-import ChoosePaymentMethodModal from '../components/ChoosePaymentMethodModal';
 
 // Initialize Stripe with your publishable key
 const stripePromise = loadStripe('pk_test_51MuE4RJIWkcGZUIabXuoFFrr5gMT5S9Ynq63FfkoZMVeEkq94UdXOKwK4t3msKIsQwnLwafv9JyvzIdKpbsFonwd00BWb4lWdj');
@@ -37,19 +35,38 @@ const Cart = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [clientSecret, setClientSecret] = useState('');
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('paypal');
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Guest checkout state
+    const [guestInfo, setGuestInfo] = useState({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: ''
+    });
+    const guestInfoRef = useRef(guestInfo);
+    const [guestErrors, setGuestErrors] = useState({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: ''
+    });
+
+    // Discount State
     const [promoCode, setPromoCode] = useState('');
     const [promoCodeApplied, setPromoCodeApplied] = useState('');
     const [discount, setDiscount] = useState(0);
     const [discountType, setDiscountType] = useState('');
     const [matchedProductIds, setMatchedProductIds] = useState([]);
     const [isGeneralCoupon, setIsGeneralCoupon] = useState(false);
-    const [couponType, setCouponType] = useState('');
-    const [{ options }, paypalDispatch] = usePayPalScriptReducer();
-    const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
-    const [isChoosePaymentModalOpen, setIsChoosePaymentModalOpen] = useState(false);
-    const [isPayPalModalOpen, setIsPayPalModalOpen] = useState(false);
-    const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+    const [couponType, setCouponType] = useState(''); // Added state for coupon type
+
+    // PayPal Part Here
+    const [{ options, isPending }, paypalDispatch] = usePayPalScriptReducer();
+
+
 
     useEffect(() => {
         paypalDispatch({
@@ -61,18 +78,75 @@ const Cart = () => {
         });
     }, [cartItems, promoCodeApplied, paypalDispatch, options.currency]);
 
+    // Fetch cart items when user is logged in
+    useEffect(() => {
+        if (user && cartItems.length === 0) {
+            dispatch(fetchCartItems());
+        }
+    }, [user, dispatch]);
+
+    useEffect(() => {
+        const fetchClientSecret = async () => {
+            try {
+                const endpoint = user ? 'stripe/intent' : 'stripe/intent/guest';
+                const headers = user ? {
+                    'Authorization': `Bearer ${getUserToken(user)}`,
+                } : {};
+
+                const response = await axios.post(
+                    API_ENDPOINT + endpoint,
+                    {
+                        amount: calculateFinalCost,
+                        user_id: user ? user.id : 'guest',
+                        cart_items: cartItems,
+                    },
+                    { headers }
+                );
+                setClientSecret(response.data.clientSecret);
+            } catch (error) {
+                // Handle error silently
+            }
+        };
+
+        if (cartItems.length > 0 && selectedPaymentMethod == 'stripe') {
+            fetchClientSecret();
+        }
+    }, [cartItems, user, promoCodeApplied, selectedPaymentMethod, discount, discountType, matchedProductIds, isGeneralCoupon, couponType]);
+
+    // Pure validation for use in render
+    const isGuestInfoValid = () => {
+        if (!guestInfo.first_name.trim()) return false;
+        if (!guestInfo.last_name.trim()) return false;
+        if (!guestInfo.email.trim() || !/\S+@\S+\.\S+/.test(guestInfo.email)) return false;
+        if (!guestInfo.phone.trim() || !/^[\+]?[1-9][\d]{0,15}$/.test(guestInfo.phone.replace(/\s/g, ''))) return false;
+        return true;
+    };
+
+    const handleGuestInfoChange = (field, value) => {
+        setGuestInfo(prev => {
+            const newState = { ...prev, [field]: value };
+            guestInfoRef.current = newState;
+            return newState;
+        });
+        if (guestErrors[field]) {
+            setGuestErrors(prev => ({ ...prev, [field]: '' }));
+        }
+    };
+
     const handleCancel = (data) => {
-        console.log('PayPal payment cancelled', data);
         setIsProcessing(false);
     };
 
     const handleIncrement = (item) => {
         const newQuantity = item.qty + 1;
         const newTotalPrice = (newQuantity * parseFloat(item.price)).toFixed(2);
+        
+        // Always update UI immediately
+        dispatch(updateItem({ ...item, qty: newQuantity, total_price: newTotalPrice }));
+        
+        // If user is logged in, also sync with API
         if (user) {
             dispatch(updateCart({ ...item, qty: newQuantity, total_price: newTotalPrice }));
-        } else {
-            dispatch(updateItem({ ...item, qty: newQuantity, total_price: newTotalPrice }));
         }
     };
 
@@ -80,10 +154,13 @@ const Cart = () => {
         if (item.qty > 1) {
             const newQuantity = item.qty - 1;
             const newTotalPrice = (newQuantity * parseFloat(item.price)).toFixed(2);
+            
+            // Always update UI immediately
+            dispatch(updateItem({ ...item, qty: newQuantity, total_price: newTotalPrice }));
+            
+            // If user is logged in, also sync with API
             if (user) {
                 dispatch(updateCart({ ...item, qty: newQuantity, total_price: newTotalPrice }));
-            } else {
-                dispatch(updateItem({ ...item, qty: newQuantity, total_price: newTotalPrice }));
             }
         }
     };
@@ -117,7 +194,7 @@ const Cart = () => {
             .toFixed(2);
     };
 
-    const calculateFinalCost = () => {
+    const calculateFinalCost = useMemo(() => {
         const total = cartItems.reduce(
             (acc, item) => Number(acc) + parseFloat(item.price * item.qty),
             0
@@ -148,6 +225,102 @@ const Cart = () => {
 
         const finalAmount = total - discountAmount;
         return finalAmount > 0 ? finalAmount.toFixed(2) : '0.00';
+    }, [cartItems, discount, discountType, matchedProductIds, isGeneralCoupon, couponType]);
+
+    const createOrder = (data, actions) => {
+        const finalTotal = calculateFinalCost;
+
+        setIsProcessing(true);
+
+        // Check if actions is defined
+        if (!actions || !actions.order) {
+            setIsProcessing(false);
+            return Promise.reject(new Error('PayPal not loaded'));
+        }
+
+        return actions.order
+            .create({
+                purchase_units: [
+                    {
+                        amount: {
+                            value: finalTotal,
+                        },
+                    },
+                ],
+            })
+            .catch((err) => {
+                setIsProcessing(false);
+            });
+    };
+
+    const onApprove = async (data, actions) => {
+        // Check if actions is defined
+        if (!actions || !actions.order) {
+            setIsProcessing(false);
+            return;
+        }
+
+        return actions.order.capture().then(async (details) => {
+            // Get the current guestInfo from ref to avoid closure issues
+            const currentGuestInfo = guestInfoRef.current;
+            console.log('PayPal onApprove - Current guestInfo from ref:', currentGuestInfo);
+
+            if (!user && (!currentGuestInfo || !currentGuestInfo.first_name || !currentGuestInfo.last_name || !currentGuestInfo.email)) {
+                console.error('Guest info is missing or incomplete');
+                setIsProcessing(false);
+                return;
+            }
+            
+            if (user && (!userInfo || !userInfo.first_name || !userInfo.last_name || !userInfo.email)) {
+                console.error('User info is missing or incomplete');
+                setIsProcessing(false);
+                return;
+            }
+            
+            const transactionDetails = {
+                user_id: user ? userInfo.id.toString() : 'guest',
+                cartItems: cartItems,
+                transaction_id: details.id,
+                amount: details.purchase_units[0].amount.value,
+                promoCode: promoCodeApplied,
+                payer_name: user ? (userInfo.first_name + ' ' + userInfo.last_name) : (currentGuestInfo.first_name + ' ' + currentGuestInfo.last_name),
+                payer_email: user ? userInfo.email : currentGuestInfo.email,
+                payer_phone: user ? (userInfo.phone || '') : currentGuestInfo.phone,
+                payment_type: 'one_time',
+                payment_method: 'PayPal',
+                order_type: 'one_time',
+            };
+
+            try {
+                console.log('Sending transaction details to API:', transactionDetails);
+                const response = await axios.post(API_ENDPOINT + 'success', transactionDetails, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        ...(user && { Authorization: `Bearer ${getUserToken(user)}` }),
+                    },
+                });
+
+                console.log('API response:', response.data);
+                dispatch(clearCart());
+                navigate(`/order-confirmation/${response.data.order_id}`, {
+                    state: {
+                        cartItems,
+                        isPromoCodeApplied: promoCodeApplied ? true : false,
+                        total: calculateFinalCost,
+                        discountAmount:
+                            cartItems.reduce((acc, item) => acc + parseFloat(item.total_price), 0) -
+                            calculateFinalCost,
+                        isGiftCard: false,
+                    },
+                });
+                setIsProcessing(false);
+            } catch (error) {
+                console.error('Payment processing error:', error);
+                console.error('Error response:', error.response?.data);
+                setIsProcessing(false);
+            }
+        });
     };
 
     const handlePromoCodeApply = async () => {
@@ -172,7 +345,7 @@ const Cart = () => {
                     headers: {
                         'Content-Type': 'application/json',
                         Accept: 'application/json',
-                        Authorization: `Bearer ${user}`,
+                        ...(user && { Authorization: `Bearer ${getUserToken(user)}` }),
                     },
                 }
             );
@@ -202,8 +375,7 @@ const Cart = () => {
                 setError('Invalid promo code');
             }
         } catch (error) {
-            console.error('Error verifying promo code:', error);
-            setError('Failed to verify promo code');
+            // Handle error silently
         } finally {
             setIsLoading(false);
         }
@@ -211,47 +383,73 @@ const Cart = () => {
 
     const isAnyProductUnavailable = cartItems.length == 0;
 
-    // PayPal approve handler for CheckoutModal
-    const handlePayPalApprove = async (data, actions) => {
+    const handlePaymentMethodChange = (method) => {
+        setSelectedPaymentMethod(method);
+        setClientSecret('');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleGiftCardCheckout = async () => {
         setIsProcessing(true);
+        
+        // Get the current guestInfo from ref to avoid closure issues
+        const currentGuestInfo = guestInfoRef.current;
+        
+        // Ensure we have valid data for the transaction
+        if (!user && (!currentGuestInfo || !currentGuestInfo.first_name || !currentGuestInfo.last_name || !currentGuestInfo.email)) {
+            console.error('Guest info is missing or incomplete for gift card checkout');
+            setIsProcessing(false);
+            return;
+        }
+        
+        if (user && (!userInfo || !userInfo.first_name || !userInfo.last_name || !userInfo.email)) {
+            console.error('User info is missing or incomplete for gift card checkout');
+            setIsProcessing(false);
+            return;
+        }
+        
+        const transactionDetails = {
+            user_id: user ? userInfo.id.toString() : 'guest',
+            cartItems: cartItems,
+            transaction_id: promoCodeApplied, // Use the gift code as transaction_id
+            amount: '0.00',
+            promoCode: promoCodeApplied,
+            payer_name: user ? (userInfo.first_name + ' ' + userInfo.last_name) : (currentGuestInfo.first_name + ' ' + currentGuestInfo.last_name),
+            payer_email: user ? userInfo.email : currentGuestInfo.email,
+            payer_phone: user ? (userInfo.phone || '') : currentGuestInfo.phone,
+            payment_type: 'one_time',
+            payment_method: 'wallet', // Set payment method as 'wallet'
+            order_type: 'one_time',
+        };
+
         try {
-            const details = await actions.order.capture();
-            const transactionDetails = {
-                user_id: userInfo.id.toString(),
-                cartItems: cartItems,
-                transaction_id: details.id,
-                amount: details.purchase_units[0].amount.value,
-                promoCode: promoCodeApplied,
-                payer_name: details.payer.name.given_name + ' ' + details.payer.name.surname,
-                payer_email: details.payer.email_address,
-                payment_type: 'one_time',
-                payment_method: 'paypal',
-                order_type: 'one_time',
-            };
+            console.log('Sending gift card transaction details to API:', transactionDetails);
             const response = await axios.post(API_ENDPOINT + 'success', transactionDetails, {
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    Authorization: `Bearer ${user}`,
+                    ...(user && { Authorization: `Bearer ${getUserToken(user)}` }),
                 },
             });
+
+            console.log('Gift card API response:', response.data);
             dispatch(clearCart());
             navigate(`/order-confirmation/${response.data.order_id}`, {
                 state: {
                     cartItems,
                     isPromoCodeApplied: promoCodeApplied ? true : false,
-                    total: calculateFinalCost(),
+                    total: calculateFinalCost,
                     discountAmount:
                         cartItems.reduce((acc, item) => acc + parseFloat(item.total_price), 0) -
-                        calculateFinalCost(),
+                        calculateFinalCost,
                     isGiftCard: false,
                 },
             });
-        } catch (error) {
-            setError('PayPal payment failed.');
-        } finally {
             setIsProcessing(false);
-            setIsCheckoutModalOpen(false);
+        } catch (error) {
+            console.error('Gift card payment processing error:', error);
+            console.error('Error response:', error.response?.data);
+            setIsProcessing(false);
         }
     };
 
@@ -421,23 +619,138 @@ const Cart = () => {
                                             Final Total :
                                         </p>
                                         <p className="font-THICCCBOI-Bold text-lg md:text-xl font-bold">
-                                            ${calculateFinalCost()}
+                                            <span className="text-2xl font-bold text-green-500">${calculateFinalCost}</span>
                                         </p>
                                     </div>
                                 </div>
                                 <hr className="border-[#4CC800] my-5" />
+
                                 <div className="bg-[#0B1306] p-4 rounded-lg md:rounded-[20px] mt-4">
                                     {isAnyProductUnavailable ? (
                                         <p className="text-red-500 font-THICCCBOI-SemiBold text-lg md:text-xl leading-6 text-center">
                                             No products available
                                         </p>
                                     ) : (
-                                        <button
-                                            onClick={() => setIsChoosePaymentModalOpen(true)}
-                                            className="primary-gradient font-Montserrat text-base leading-4 font-medium py-3 px-4 rounded-full w-full transition-all duration-300 ease-in-out active:scale-95"
-                                        >
-                                            CONTINUE TO PAYMENT
-                                        </button>
+                                        <>
+                                            {calculateFinalCost == '0.00' && couponType == 'gift' ? (
+                                                <button
+                                                    onClick={handleGiftCardCheckout}
+                                                    disabled={isProcessing}
+                                                    className="primary-gradient font-Montserrat text-base leading-4 font-medium py-3 px-4 rounded-full w-full transition-all duration-300 ease-in-out active:scale-95"
+                                                >
+                                                    {isProcessing ? 'Processing...' : 'Checkout'}
+                                                </button>
+                                            ) : (
+                                                <>
+                                                    {/* Guest Information Form - Show only for non-logged users */}
+                                                    {!user && (
+                                                        <div className="mb-6">
+                                                            <h3 className="font-THICCCBOI-SemiBold text-lg mb-4">Guest Information</h3>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <label className="block font-THICCCBOI-SemiBold text-sm mb-2">First Name *</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={guestInfo.first_name}
+                                                                        onChange={(e) => handleGuestInfoChange('first_name', e.target.value)}
+                                                                        className="w-full p-3 bg-[#EDEDED] text-black rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                                        required
+                                                                    />
+                                                                    {guestErrors.first_name && <p className="text-red-500 text-xs mt-1">{guestErrors.first_name}</p>}
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block font-THICCCBOI-SemiBold text-sm mb-2">Last Name *</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={guestInfo.last_name}
+                                                                        onChange={(e) => handleGuestInfoChange('last_name', e.target.value)}
+                                                                        className="w-full p-3 bg-[#EDEDED] text-black rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                                        required
+                                                                    />
+                                                                    {guestErrors.last_name && <p className="text-red-500 text-xs mt-1">{guestErrors.last_name}</p>}
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block font-THICCCBOI-SemiBold text-sm mb-2">Email *</label>
+                                                                    <input
+                                                                        type="email"
+                                                                        value={guestInfo.email}
+                                                                        onChange={(e) => handleGuestInfoChange('email', e.target.value)}
+                                                                        className="w-full p-3 bg-[#EDEDED] text-black rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                                        required
+                                                                    />
+                                                                    {guestErrors.email && <p className="text-red-500 text-xs mt-1">{guestErrors.email}</p>}
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block font-THICCCBOI-SemiBold text-sm mb-2">Phone Number *</label>
+                                                                    <input
+                                                                        type="tel"
+                                                                        value={guestInfo.phone}
+                                                                        onChange={(e) => handleGuestInfoChange('phone', e.target.value)}
+                                                                        className="w-full p-3 bg-[#EDEDED] text-black rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                                        required
+                                                                    />
+                                                                    {guestErrors.phone && <p className="text-red-500 text-xs mt-1">{guestErrors.phone}</p>}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Payment Methods - Same for both logged and guest users */}
+                                                    <div className="flex justify-center gap-4 mb-8">
+                                                        <button
+                                                            onClick={() => handlePaymentMethodChange('paypal')}
+                                                            className={`w-1/2 py-3 rounded-md ${selectedPaymentMethod == 'paypal'
+                                                                ? 'bg-blue-500 text-white'
+                                                                : 'bg-gray-200 text-black'
+                                                                }`}
+                                                            disabled={isProcessing}
+                                                        >
+                                                            PayPal
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handlePaymentMethodChange('stripe')}
+                                                            className={`w-1/2 py-3 rounded-md ${selectedPaymentMethod == 'stripe'
+                                                                ? 'bg-blue-500 text-white'
+                                                                : 'bg-gray-200 text-black'
+                                                                }`}
+                                                            disabled={isProcessing}
+                                                        >
+                                                            Stripe
+                                                        </button>
+                                                    </div>
+
+                                                    {selectedPaymentMethod == 'paypal' && !isPending && (
+                                                        <PayPalButtons
+                                                            createOrder={createOrder}
+                                                            onApprove={onApprove}
+                                                            onCancel={handleCancel}
+                                                            disabled={isProcessing || (!user && !isGuestInfoValid())}
+                                                        />
+                                                    )}
+                                                    {selectedPaymentMethod == 'paypal' && isPending && (
+                                                        <div className="text-center py-4">
+                                                            <p>Loading PayPal...</p>
+                                                        </div>
+                                                    )}
+                                                    {selectedPaymentMethod == 'stripe' && (
+                                                        <Elements
+                                                            stripe={stripePromise}
+                                                        >
+                                                            <StripePaymentForm
+                                                                cartItems={cartItems}
+                                                                finalTotal={Number(calculateFinalCost)}
+                                                                promoCodeApplied={promoCodeApplied}
+                                                                calculateFinalCost={calculateFinalCost}
+                                                                isProcessing={isProcessing}
+                                                                setIsProcessing={setIsProcessing}
+                                                                isGuestCheckout={!user}
+                                                                guestInfo={guestInfo}
+                                                            />
+                                                        </Elements>
+                                                    )}
+                                                </>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -465,7 +778,7 @@ const Cart = () => {
                             <h1 className="text-3xl font-bold mb-4">No items in the cart</h1>
                             <p className="text-xl">Start shopping to add items to your cart.</p>
                             <Link
-                                to="/select-services"
+                                to="/services"
                                 className="primary-gradient font-Montserrat text-base leading-4 font-medium py-3 px-4 rounded-full w-fit mx-auto text-center block mt-8 transition-all duration-300 ease-in-out active:scale-95"
                             >
                                 Go to Services
@@ -474,29 +787,6 @@ const Cart = () => {
                     </>
                 )}
             </section>
-            <ChoosePaymentMethodModal
-                isOpen={isChoosePaymentModalOpen}
-                onClose={() => setIsChoosePaymentModalOpen(false)}
-                onChoosePayPal={() => {
-                    setIsChoosePaymentModalOpen(false);
-                    setIsPayPalModalOpen(true);
-                }}
-                onChooseCard={() => {
-                    setIsChoosePaymentModalOpen(false);
-                    setIsCardModalOpen(true);
-                }}
-            />
-            <PaypalCheckoutModal
-                isOpen={isPayPalModalOpen}
-                onClose={() => setIsPayPalModalOpen(false)}
-                price={calculateFinalCost()}
-                onPayPalApprove={handlePayPalApprove}
-                isProcessing={isProcessing}
-            />
-            <StripeCheckoutModal
-                isOpen={isCardModalOpen}
-                onClose={() => setIsCardModalOpen(false)}
-            />
         </main>
     );
 };
@@ -509,6 +799,8 @@ const StripePaymentForm = ({
     calculateFinalCost,
     isProcessing,
     setIsProcessing,
+    isGuestCheckout = false,
+    guestInfo = null,
 }) => {
     const stripe = useStripe();
     const elements = useElements();
@@ -519,28 +811,42 @@ const StripePaymentForm = ({
     const userInfo = useSelector(selectUserInfo);
 
     const handleSuccessPayment = async (transactionId) => {
-        const transactionDetails = {
-            user_id: userInfo.id.toString(),
-            cartItems: cartItems,
-            transaction_id: transactionId,
-            amount: finalTotal,
+        // Get the current guestInfo from ref to avoid closure issues
+        const currentGuestInfo = guestInfoRef.current;
+        
+        const paymentData = {
+            payment_method_id: transactionId, // This will be the payment method ID from Stripe
+            amount: finalTotal * 100, // Convert to cents for Stripe
+            currency: 'usd',
+            user_id: isGuestCheckout ? 'guest' : userInfo.id.toString(),
+            cart_items: cartItems,
             promoCode: promoCodeApplied,
-            payer_name: userInfo.first_name + ' ' + userInfo.last_name,
-            payer_email: userInfo.email,
-            payment_type: 'one_time',
-            payment_method: 'Stripe',
-            order_type: 'one_time',
+            // Guest info if not logged in
+            guest_info: isGuestCheckout ? {
+                first_name: currentGuestInfo.first_name,
+                last_name: currentGuestInfo.last_name,
+                email: currentGuestInfo.email,
+                phone: currentGuestInfo.phone
+            } : null
         };
 
+
         try {
-            const successResponse = await axios.post(API_ENDPOINT + 'success', transactionDetails, {
+            console.log('Sending Stripe payment data to API:', paymentData);
+            const endpoint = user ? 'stripe/pay' : 'stripe/pay/guest';
+            const headers = user ? {
+                'Authorization': `Bearer ${getUserToken(user)}`,
+            } : {};
+
+            const successResponse = await axios.post(API_ENDPOINT + endpoint, paymentData, {
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    Authorization: `Bearer ${user}`,
+                    ...headers
                 },
             });
 
+            console.log('Stripe API response:', successResponse.data);
             dispatch(clearCart());
             navigate(`/order-confirmation/${successResponse.data.order_id}`, {
                 state: {
@@ -549,13 +855,14 @@ const StripePaymentForm = ({
                     total: finalTotal,
                     discountAmount:
                         cartItems.reduce((acc, item) => acc + parseFloat(item.total_price), 0) -
-                        calculateFinalCost(),
+                        calculateFinalCost,
                     isGiftCard: false,
                 },
             });
         } catch (apiError) {
-            console.error('Error creating order on backend:', apiError);
-            setError('Order confirmation failed. Please contact support.');
+            console.error('Stripe payment processing error:', apiError);
+            console.error('Error response:', apiError.response?.data);
+            setIsProcessing(false);
         }
     };
 
@@ -570,22 +877,25 @@ const StripePaymentForm = ({
         }
 
         try {
-            const { error: paymentError, paymentIntent } = await stripe.confirmPayment({
-                elements,
-                confirmParams: {
-                    return_url: `${window.location.origin}/order-confirmation`,
+            // Get payment method from elements
+            const { error: paymentMethodError, paymentMethod } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: elements.getElement('card'),
+                billing_details: {
+                    name: isGuestCheckout ? `${guestInfo.first_name} ${guestInfo.last_name}` : `${userInfo.first_name} ${userInfo.last_name}`,
+                    email: isGuestCheckout ? guestInfo.email : userInfo.email,
+                    phone: isGuestCheckout ? guestInfo.phone : (userInfo.phone || ''),
                 },
-                redirect: 'if_required',
             });
 
-            if (paymentError) {
-                setError(paymentError.message);
+            if (paymentMethodError) {
+                setError(paymentMethodError.message);
                 setIsProcessing(false);
                 return;
             }
 
-            if (paymentIntent && paymentIntent.status == 'succeeded') {
-                handleSuccessPayment(paymentIntent.id);
+            if (paymentMethod) {
+                handleSuccessPayment(paymentMethod.id);
             }
         } catch (err) {
             setError('Payment failed. Please try again.');
@@ -596,7 +906,23 @@ const StripePaymentForm = ({
     return (
         <>
             <form onSubmit={handleSubmit}>
-                <PaymentElement className="bg-white p-3 rounded-md mb-4" disabled={isProcessing} />
+                <CardElement 
+                    className="bg-white p-3 rounded-md mb-4" 
+                    options={{
+                        style: {
+                            base: {
+                                fontSize: '16px',
+                                color: '#424770',
+                                '::placeholder': {
+                                    color: '#aab7c4',
+                                },
+                            },
+                            invalid: {
+                                color: '#9e2146',
+                            },
+                        },
+                    }}
+                />
                 {error && <div className="text-red-500 mb-3">{error}</div>}
                 <button
                     type="submit"
@@ -614,9 +940,11 @@ StripePaymentForm.propTypes = {
     cartItems: PropTypes.array.isRequired,
     finalTotal: PropTypes.number.isRequired,
     promoCodeApplied: PropTypes.string,
-    calculateFinalCost: PropTypes.func.isRequired,
+    calculateFinalCost: PropTypes.string.isRequired,
     isProcessing: PropTypes.bool.isRequired,
     setIsProcessing: PropTypes.func.isRequired,
+    isGuestCheckout: PropTypes.bool,
+    guestInfo: PropTypes.object,
 };
 
 export default Cart;

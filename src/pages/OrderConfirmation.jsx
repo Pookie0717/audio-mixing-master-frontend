@@ -17,8 +17,6 @@ const OrderConfirmation = () => {
     const discountAmount = isNaN(parseFloat(location.state?.discountAmount)) ? 0 : parseFloat(location.state?.discountAmount); // Ensure discountAmount is a number
     const isGiftCard = location.isGiftCard;
 
-    console.log(cartItems)
-
     useEffect(() => {
         if (cartItems[0].service_type == "subscription" || !isGiftCard) return;
         dispatch(clearCart()); // Clear the cart items when this component mounts

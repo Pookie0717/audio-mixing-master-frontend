@@ -52,7 +52,7 @@ const MessageModal = ({ selectedOrderItem, setRevisions, setOrderStatus, setOrde
             setIsMessageSent(true);
             setMessage(''); // Clear the message after sending
         } catch (error) {
-            console.error("Failed to send message:", error);
+            // Handle error silently
         } finally {
             setIsProcessing(false);
         }
@@ -172,7 +172,7 @@ const ReviewPurchaseModal = ({ orderId, seletedOrderItems, amount, setRevisions,
                     });
                     setClientSecret(response.data);
                 } catch (error) {
-                    console.error('Error fetching client secret:', error);
+                    // Handle error silently
                 }
             };
 
@@ -181,7 +181,6 @@ const ReviewPurchaseModal = ({ orderId, seletedOrderItems, amount, setRevisions,
     }, [user, amount]);
 
     const handleCancel = (data) => {
-        console.log('PayPal payment cancelled', data);
         setIsProcessing(false);
     };
 
@@ -238,7 +237,7 @@ const ReviewPurchaseModal = ({ orderId, seletedOrderItems, amount, setRevisions,
                 setIsPaymentComplete(true);
 
             } catch (error) {
-                console.error('Error creating order on backend:', error);
+                // Handle error silently
             }
             setIsProcessing(false);
         });
@@ -380,8 +379,7 @@ const StripePaymentForm = ({ finalTotal, setIsPaymentComplete, isProcessing, set
 
             setIsPaymentComplete(true);
         } catch (apiError) {
-            console.error('Error creating order on backend:', apiError);
-            setError('Order confirmation failed. Please contact support.');
+            // Handle error silently
         }
     };
 

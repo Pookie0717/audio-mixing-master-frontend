@@ -43,8 +43,7 @@ const OrderDetailPage = () => {
                 setOrderStatus(response.data.order.Order_status);
                 setIsGiftCard(response.data.is_giftcard);
             } catch (error) {
-                console.error('Failed to fetch order:', error);
-                setLoading(false);
+                // Handle error silently
             }
         };
 
@@ -149,7 +148,7 @@ const OrderDetailPage = () => {
 
             setOrderItems(response.data);
         } catch (error) {
-            console.log(error);
+            // Handle error silently
         }
     };
 
@@ -170,7 +169,7 @@ const OrderDetailPage = () => {
 
             setRevisions(response.data);
         } catch (error) {
-            console.error("Error reading revision", error);
+            // Handle error silently
         }
     };
 

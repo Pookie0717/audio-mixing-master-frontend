@@ -35,9 +35,9 @@ const Orders = () => {
             });
 
             setOrders(response.data);
-            setLoading(false);
         } catch (error) {
-            console.error("Failed to fetch orders:", error);
+            // Handle error silently
+        } finally {
             setLoading(false);
         }
     };

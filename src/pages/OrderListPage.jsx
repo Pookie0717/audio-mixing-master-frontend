@@ -32,10 +32,10 @@ const OrderListPage = () => {
                 setOrders(response.data.data);
                 setCurrentPage(response.data.current_page);
                 setPageCount(response.data.last_page);
-                setLoading(false); // Stop loading
             } catch (error) {
-                console.error('Failed to fetch orders:', error);
-                setLoading(false); // Stop loading
+                // Handle error silently
+            } finally {
+                setLoading(false);
             }
         };
 

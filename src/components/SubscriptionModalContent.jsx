@@ -56,7 +56,7 @@ const SubscriptionModalContent = ({ product, onClose }) => {
                     setClientSecret(response.data.intent);
                     setSubscriptionId(response.data.subscription_id);
                 } catch (error) {
-                    console.error('Error fetching client secret:', error);
+                    // Handle error silently
                 }
             };
 
@@ -65,7 +65,6 @@ const SubscriptionModalContent = ({ product, onClose }) => {
     }, [user, product, userInfo]);
 
     const handleCancel = (data) => {
-        console.log('PayPal payment cancelled', data);
         setIsProcessing(false);
     };
 
@@ -78,7 +77,6 @@ const SubscriptionModalContent = ({ product, onClose }) => {
         return actions.subscription.create({
             plan_id: product.paypal_plan_id,
         }).catch(err => {
-            console.error("Error creating subscription:", err);
             setIsProcessing(false);
         });
     };
@@ -132,11 +130,9 @@ const SubscriptionModalContent = ({ product, onClose }) => {
                 });
                 onClose(); // Close the modal
             } catch (error) {
-                console.error('Error creating order on backend:', error);
                 setIsProcessing(false);
             }
         }).catch(err => {
-            console.error("Error approving subscription:", err);
             setIsProcessing(false);
         });
     };
@@ -412,11 +408,10 @@ const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProces
                     });
                     onClose(); // Close the modal
                 } catch (error) {
-                    console.error('Error creating order on backend:', error);
+                    // Handle error silently
                 }
             }
         } catch (err) {
-            setError('Payment failed. Please try again.');
             setIsProcessing(false);
         }
     };
