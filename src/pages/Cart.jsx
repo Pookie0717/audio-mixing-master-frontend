@@ -25,7 +25,7 @@ import { RxCross2 } from 'react-icons/rx';
 import { API_ENDPOINT } from '../utils/constants';
 
 // Initialize Stripe with your publishable key
-const stripePromise = loadStripe('pk_test_51MuE4RJIWkcGZUIabXuoFFrr5gMT5S9Ynq63FfkoZMVeEkq94UdXOKwK4t3msKIsQwnLwafv9JyvzIdKpbsFonwd00BWb4lWdj');
+const stripePromise = loadStripe('pk_test_51RjnNlBLWIuPZiGv5CgPpQvjtHnJGIR15E6gfTl7IhdQaxgHqDKaEpuR09Jcdd6fAGnzNqj2434MmkIhDcpoANJP00AMCOFicD');
 
 const Cart = () => {
     const dispatch = useDispatch();
@@ -811,9 +811,6 @@ const StripePaymentForm = ({
     const userInfo = useSelector(selectUserInfo);
 
     const handleSuccessPayment = async (transactionId) => {
-        // Get the current guestInfo from ref to avoid closure issues
-        const currentGuestInfo = guestInfoRef.current;
-        
         const paymentData = {
             payment_method_id: transactionId, // This will be the payment method ID from Stripe
             amount: finalTotal * 100, // Convert to cents for Stripe
@@ -823,10 +820,10 @@ const StripePaymentForm = ({
             promoCode: promoCodeApplied,
             // Guest info if not logged in
             guest_info: isGuestCheckout ? {
-                first_name: currentGuestInfo.first_name,
-                last_name: currentGuestInfo.last_name,
-                email: currentGuestInfo.email,
-                phone: currentGuestInfo.phone
+                first_name: guestInfo.first_name,
+                last_name: guestInfo.last_name,
+                email: guestInfo.email,
+                phone: guestInfo.phone
             } : null
         };
 
@@ -887,6 +884,7 @@ const StripePaymentForm = ({
                     phone: isGuestCheckout ? guestInfo.phone : (userInfo.phone || ''),
                 },
             });
+            console.log(paymentMethod);
 
             if (paymentMethodError) {
                 setError(paymentMethodError.message);

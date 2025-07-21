@@ -57,7 +57,7 @@ const Signup = () => {
 
             reset();
         } catch (error) {
-            toast.error(error.response?.data?.error || error.message, {
+            toast.error(error.response?.data?.message || error.message, {
                 position: "top-center",
                 autoClose: 10000,
                 hideProgressBar: true,

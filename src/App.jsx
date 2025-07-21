@@ -44,6 +44,7 @@ import TermsConditions from './pages/TermsConditions';
 import MFIT from './pages/MFIT';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
+
 import GiftCard from './pages/GiftCard';
 
 const router = createBrowserRouter([
@@ -74,6 +75,7 @@ const router = createBrowserRouter([
       { path: '/mfit', element: <MFIT /> },
       { path: '/blog', element: <Blog /> },
       { path: '/blog/:postId', element: <BlogPost /> },
+
     ],
   },
   {

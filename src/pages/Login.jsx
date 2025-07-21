@@ -87,7 +87,8 @@ const Login = () => {
             navigate(redirectPath, { replace: true });
 
         } catch (error) {
-            toast.error(error.response?.data?.error || error.message, {
+            console.log(error); 
+            toast.error(error.response?.data?.message || error.message, {
                 position: "top-center",
                 autoClose: 10000,
                 hideProgressBar: true,

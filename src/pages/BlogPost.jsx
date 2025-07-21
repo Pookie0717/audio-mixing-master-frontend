@@ -11,6 +11,8 @@ export default function BlogPost() {
     const [post, setPost] = useState(null);
     const [relatedPosts, setRelatedPosts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [htmlContent, setHtmlContent] = useState('');
+    const [error, setError] = useState(null);
 
     // Sample blog data - replace with actual API call
     const sampleBlogPosts = [
@@ -300,22 +302,98 @@ export default function BlogPost() {
     useEffect(() => {
         const fetchPost = async () => {
             try {
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                setLoading(true);
+                setError(null);
                 
-                const foundPost = blogPostsData.find(p => p.id === parseInt(postId));
-                if (foundPost) {
-                    setPost(foundPost);
+                // Check if this is a request for one of the 91 HTML blog posts
+                const postNumber = postId?.replace('BlogPost', '').replace('.html', '');
+                
+                if (postNumber && !isNaN(postNumber) && postNumber >= 1 && postNumber <= 91) {
+                    // Fetch HTML content from the generated blog post
+                    const response = await fetch(`/src/pages/blog/BlogPost${postNumber}.html`);
                     
-                    // Get related posts (same category, excluding current post)
-                    const related = blogPostsData
-                        .filter(p => p.category === foundPost.category && p.id !== foundPost.id)
-                        .slice(0, 3);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch blog post');
+                    }
+                    
+                    const html = await response.text();
+                    
+                    // Extract only the article content from the HTML
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const articleContent = doc.querySelector('.blog-content');
+                    
+                    if (articleContent) {
+                        setHtmlContent(articleContent.innerHTML);
+                    } else {
+                        // Fallback: use the entire body content
+                        const bodyContent = doc.querySelector('body');
+                        if (bodyContent) {
+                            // Remove the header and navigation elements
+                            const header = bodyContent.querySelector('header');
+                            const nav = bodyContent.querySelector('nav');
+                            const backButton = bodyContent.querySelector('.mb-8');
+                            const relatedSection = bodyContent.querySelector('section');
+                            
+                            if (header) header.remove();
+                            if (nav) nav.remove();
+                            if (backButton) backButton.remove();
+                            if (relatedSection) relatedSection.remove();
+                            
+                            setHtmlContent(bodyContent.innerHTML);
+                        } else {
+                            setHtmlContent(html);
+                        }
+                    }
+                    
+                    // Create a mock post object for the HTML blog post
+                    const mockPost = {
+                        id: parseInt(postNumber),
+                        title: `Blog Post ${postNumber} - Audio Mixing & Mastering Guide`,
+                        excerpt: `Discover the latest techniques and insights in audio mixing and mastering. This comprehensive guide covers everything you need to know about professional audio production.`,
+                        author: `Author ${postNumber}`,
+                        date: `2024-01-${(postNumber % 30 + 1).toString().padStart(2, '0')}`,
+                        readTime: `${5 + (postNumber % 10)} min read`,
+                        category: `Category${(postNumber % 6) + 1}`,
+                        image_url: `https://picsum.photos/800/400?random=${postNumber}`
+                    };
+                    
+                    setPost(mockPost);
+                    
+                    // Generate related posts
+                    const related = [];
+                    for (let i = 1; i <= 3; i++) {
+                        const relatedId = ((parseInt(postNumber) + i - 1) % 91) + 1;
+                        related.push({
+                            id: relatedId,
+                            title: `Blog Post ${relatedId} - Audio Mixing & Mastering Guide`,
+                            excerpt: `Related blog post ${relatedId} content...`,
+                            author: `Author ${relatedId}`,
+                            date: `2024-01-${(relatedId % 30 + 1).toString().padStart(2, '0')}`,
+                            readTime: `${5 + (relatedId % 10)} min read`,
+                            category: `Category${(relatedId % 6) + 1}`,
+                            image_url: `https://picsum.photos/400/250?random=${relatedId}`
+                        });
+                    }
                     setRelatedPosts(related);
+                } else {
+                    // Handle regular blog posts (existing logic)
+                    const foundPost = sampleBlogPosts.find(p => p.id === parseInt(postId));
+                    if (foundPost) {
+                        setPost(foundPost);
+                        
+                        // Get related posts (same category, excluding current post)
+                        const related = sampleBlogPosts
+                            .filter(p => p.category === foundPost.category && p.id !== foundPost.id)
+                            .slice(0, 3);
+                        setRelatedPosts(related);
+                    }
                 }
                 
                 setLoading(false);
             } catch (error) {
+                console.error('Error fetching blog post:', error);
+                setError('Failed to load blog post');
                 setLoading(false);
             }
         };
@@ -357,6 +435,35 @@ export default function BlogPost() {
                             <Skeleton height={20} width="85%" baseColor="#0B1306" highlightColor="#171717" className="mb-3" />
                             <Skeleton height={20} width="70%" baseColor="#0B1306" highlightColor="#171717" />
                         </div>
+                    </div>
+                </section>
+            </main>
+        );
+    }
+
+    if (error) {
+        return (
+            <main className='mt-24'>
+                <section className="text-white relative z-20 mb-24 px-5 md:px-10 xl:px-0">
+                    <picture>
+                        <source srcSet={GreenShadowBG} type="image/webp" />
+                        <img src={GreenShadowBG} className="absolute -top-full left-0 pointer-events-none" alt="Green Shadow Background" />
+                    </picture>
+                    <picture>
+                        <source srcSet={PurpleShadowBG} type="image/webp" />
+                        <img src={PurpleShadowBG} className="absolute -top-3/4 right-0 pointer-events-none" alt="Purple Shadow Background" />
+                    </picture>
+                    
+                    <div className="max-w-[1110px] relative z-20 mx-auto text-center">
+                        <h1 className="font-THICCCBOI-Medium text-3xl md:text-4xl mb-6">Error Loading Article</h1>
+                        <p className="text-gray-300 mb-8">{error}</p>
+                        <RouterLink
+                            to="/blog"
+                            className="inline-flex items-center px-6 py-3 bg-[#4DC801] text-white rounded-full font-Montserrat font-medium hover:bg-[#3ba001] transition-colors duration-300"
+                        >
+                            <ArrowLeftIcon className="w-5 h-5 mr-2" />
+                            Back to Blog
+                        </RouterLink>
                     </div>
                 </section>
             </main>
@@ -453,34 +560,61 @@ export default function BlogPost() {
                         </p>
 
                         <div className="inline-block bg-[#4DC801] text-white px-4 py-2 rounded-full text-sm font-medium">
-                            {categoriesData.find(cat => cat.id === post.category)?.name}
+                            {categories.find(cat => cat.id === post.category)?.name || post.category}
                         </div>
                     </div>
 
                     {/* Article Content */}
                     <div className="bg-[#0B1306] rounded-[30px] p-8 mb-12">
-                        <div 
-                            className="prose prose-invert prose-lg max-w-none"
-                            dangerouslySetInnerHTML={{ __html: post.content }}
-                            style={{
-                                '--tw-prose-body': '#d1d5db',
-                                '--tw-prose-headings': '#ffffff',
-                                '--tw-prose-links': '#4CC800',
-                                '--tw-prose-bold': '#ffffff',
-                                '--tw-prose-counters': '#6b7280',
-                                '--tw-prose-bullets': '#6b7280',
-                                '--tw-prose-hr': '#374151',
-                                '--tw-prose-quotes': '#f3f4f6',
-                                '--tw-prose-quote-borders': '#4CC800',
-                                '--tw-prose-captions': '#9ca3af',
-                                '--tw-prose-code': '#ffffff',
-                                '--tw-prose-pre-code': '#d1d5db',
-                                '--tw-prose-pre-bg': '#1f2937',
-                                '--tw-prose-pre-border': '#374151',
-                                '--tw-prose-th-borders': '#4b5563',
-                                '--tw-prose-td-borders': '#374151',
-                            }}
-                        />
+                        {htmlContent ? (
+                            // Render HTML content from the generated blog posts
+                            <div 
+                                className="prose prose-invert prose-lg max-w-none"
+                                dangerouslySetInnerHTML={{ __html: htmlContent }}
+                                style={{
+                                    '--tw-prose-body': '#d1d5db',
+                                    '--tw-prose-headings': '#ffffff',
+                                    '--tw-prose-links': '#4CC800',
+                                    '--tw-prose-bold': '#ffffff',
+                                    '--tw-prose-counters': '#6b7280',
+                                    '--tw-prose-bullets': '#6b7280',
+                                    '--tw-prose-hr': '#374151',
+                                    '--tw-prose-quotes': '#f3f4f6',
+                                    '--tw-prose-quote-borders': '#4CC800',
+                                    '--tw-prose-captions': '#9ca3af',
+                                    '--tw-prose-code': '#ffffff',
+                                    '--tw-prose-pre-code': '#d1d5db',
+                                    '--tw-prose-pre-bg': '#1f2937',
+                                    '--tw-prose-pre-border': '#374151',
+                                    '--tw-prose-th-borders': '#4b5563',
+                                    '--tw-prose-td-borders': '#374151',
+                                }}
+                            />
+                        ) : (
+                            // Render regular post content
+                            <div 
+                                className="prose prose-invert prose-lg max-w-none"
+                                dangerouslySetInnerHTML={{ __html: post.content }}
+                                style={{
+                                    '--tw-prose-body': '#d1d5db',
+                                    '--tw-prose-headings': '#ffffff',
+                                    '--tw-prose-links': '#4CC800',
+                                    '--tw-prose-bold': '#ffffff',
+                                    '--tw-prose-counters': '#6b7280',
+                                    '--tw-prose-bullets': '#6b7280',
+                                    '--tw-prose-hr': '#374151',
+                                    '--tw-prose-quotes': '#f3f4f6',
+                                    '--tw-prose-quote-borders': '#4CC800',
+                                    '--tw-prose-captions': '#9ca3af',
+                                    '--tw-prose-code': '#ffffff',
+                                    '--tw-prose-pre-code': '#d1d5db',
+                                    '--tw-prose-pre-bg': '#1f2937',
+                                    '--tw-prose-pre-border': '#374151',
+                                    '--tw-prose-th-borders': '#4b5563',
+                                    '--tw-prose-td-borders': '#374151',
+                                }}
+                            />
+                        )}
                     </div>
 
                     {/* Related Posts */}
@@ -499,7 +633,7 @@ export default function BlogPost() {
                                                 className="w-full h-48 object-cover"
                                             />
                                             <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-sm font-medium">
-                                                {categoriesData.find(cat => cat.id === relatedPost.category)?.name}
+                                                {categories.find(cat => cat.id === relatedPost.category)?.name || relatedPost.category}
                                             </div>
                                         </div>
                                         <div className="p-6">
@@ -517,7 +651,7 @@ export default function BlogPost() {
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-400">{relatedPost.readTime}</span>
                                                 <RouterLink
-                                                    to={`/blog/${relatedPost.id}`}
+                                                    to={htmlContent ? `/blog/BlogPost${relatedPost.id}.html` : `/blog/${relatedPost.id}`}
                                                     className="text-[#4CC800] hover:text-[#3ba001] font-medium transition-colors duration-300"
                                                 >
                                                     Read More →

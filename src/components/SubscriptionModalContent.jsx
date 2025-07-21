@@ -23,12 +23,7 @@ const SubscriptionModalContent = ({ product, onClose }) => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [subscriptionId, setSubscriptionId] = useState('');
     
-    // Guest checkout state
-    const [isGuestCheckout, setIsGuestCheckout] = useState(false);
-    const [guestInfo, setGuestInfo] = useState({
-        email: '',
-        phone: ''
-    });
+
 
     useEffect(() => {
         paypalDispatch({
@@ -86,7 +81,7 @@ const SubscriptionModalContent = ({ product, onClose }) => {
         return actions.subscription.get().then(async (details) => {
             setSubscriptionId(details.id);
             const subscriptionDetails = {
-                user_id: user ? userInfo.id : 'guest',
+                user_id: userInfo.id,
                 cartItems: [
                     {
                         service_id: product.id.toString(),
@@ -102,9 +97,9 @@ const SubscriptionModalContent = ({ product, onClose }) => {
                 transaction_id: details.id,
                 amount: Number(product.discounted_price) || Number(product.price),
                 promoCode: "", // If you have a promo code logic, replace it accordingly
-                payer_name: user ? userInfo.first_name + " " + userInfo.last_name : guestInfo.first_name + " " + guestInfo.last_name,
-                payer_email: user ? userInfo.email : guestInfo.email,
-                payer_phone: user ? (userInfo.phone || '') : guestInfo.phone,
+                payer_name: userInfo.first_name + " " + userInfo.last_name,
+                payer_email: userInfo.email,
+                payer_phone: userInfo.phone || '',
                 payment_method: "paypal",
                 order_type: "subscription"
             };
@@ -155,7 +150,7 @@ const SubscriptionModalContent = ({ product, onClose }) => {
                     </div>
                     <hr className='border-[#4CC800] my-3' />
 
-                    {(user || isGuestCheckout) &&
+                    {user &&
                         <div className="flex justify-center gap-4 mt-4">
                             <button
                                 onClick={() => setSelectedPaymentMethod('paypal')}
@@ -199,90 +194,17 @@ const SubscriptionModalContent = ({ product, onClose }) => {
                                             isProcessing={isProcessing}
                                             setIsProcessing={setIsProcessing}
                                             subscriptionId={subscriptionId}
-                                            isGuestCheckout={false}
-                                            guestInfo={null}
                                         />
                                     </Elements>
                                 )}
                             </>
-                        ) : !isGuestCheckout ? (
+                        ) : (
                             <div className="text-center">
-                                <p className="font-THICCCBOI-SemiBold text-lg mb-4">Choose your checkout option:</p>
+                                <p className="font-THICCCBOI-SemiBold text-lg mb-4">Login required for subscription:</p>
                                 <div className="flex flex-col gap-3">
                                     <Link to="/login" className='primary-gradient font-Montserrat text-base leading-4 font-semibold block mx-auto text-white py-4 px-6 rounded-full w-fit transition-all duration-300 ease-in-out active:scale-95'>Login to subscribe</Link>
-                                    <button
-                                        onClick={() => setIsGuestCheckout(true)}
-                                        className="bg-white text-black font-Montserrat text-base leading-4 font-medium py-4 px-6 rounded-full w-fit mx-auto transition-all duration-300 ease-in-out active:scale-95 border-2 border-gray-300"
-                                    >
-                                        Continue as Guest
-                                    </button>
                                 </div>
                             </div>
-                        ) : (
-                            <>
-                                {/* Guest Information Form */}
-                                <div className="mb-6">
-                                    <h3 className="font-THICCCBOI-SemiBold text-lg mb-4">Guest Information</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block font-THICCCBOI-SemiBold text-sm mb-2">Email *</label>
-                                            <input
-                                                type="email"
-                                                value={guestInfo.email}
-                                                onChange={(e) => setGuestInfo({...guestInfo, email: e.target.value})}
-                                                className="w-full p-3 bg-[#EDEDED] text-black rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block font-THICCCBOI-SemiBold text-sm mb-2">Phone Number *</label>
-                                            <input
-                                                type="tel"
-                                                value={guestInfo.phone}
-                                                onChange={(e) => setGuestInfo({...guestInfo, phone: e.target.value})}
-                                                className="w-full p-3 bg-[#EDEDED] text-black rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => setIsGuestCheckout(false)}
-                                        className="text-green-500 font-THICCCBOI-SemiBold text-sm mt-2 underline"
-                                    >
-                                        ← Back to login options
-                                    </button>
-                                </div>
-
-                                {/* Payment Methods for Guest */}
-                                <>
-                                    {selectedPaymentMethod == 'paypal' && (
-                                        <PayPalButtons
-                                            style={{ layout: 'vertical' }}
-                                            createSubscription={createSubscription}
-                                            onApprove={onApproveSubscription}
-                                            disabled={isProcessing}
-                                            onCancel={handleCancel}
-                                        />
-                                    )}
-
-                                    {selectedPaymentMethod == 'stripe' && clientSecret && (
-                                        <Elements stripe={stripePromise} options={{ clientSecret }}>
-                                            <StripeSubscriptionForm
-                                                product={product}
-                                                userInfo={null}
-                                                clientSecret={clientSecret}
-                                                onClose={onClose}
-                                                navigate={navigate}
-                                                isProcessing={isProcessing}
-                                                setIsProcessing={setIsProcessing}
-                                                subscriptionId={subscriptionId}
-                                                isGuestCheckout={true}
-                                                guestInfo={guestInfo}
-                                            />
-                                        </Elements>
-                                    )}
-                                </>
-                            </>
                         )}
                     </div>
                 </div>
@@ -291,7 +213,7 @@ const SubscriptionModalContent = ({ product, onClose }) => {
     );
 };
 
-const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProcessing, setIsProcessing, subscriptionId, isGuestCheckout, guestInfo }) => {
+const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProcessing, setIsProcessing, subscriptionId }) => {
     const stripe = useStripe();
     const elements = useElements();
     const [error, setError] = useState(null);
@@ -348,9 +270,9 @@ const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProces
                     return_url: `${window.location.origin}/order-confirmation`,
                     payment_method_data: {
                         billing_details: {
-                            name: isGuestCheckout ? guestInfo.first_name + ' ' + guestInfo.last_name : userInfo.first_name + ' ' + userInfo.last_name,
-                            email: isGuestCheckout ? guestInfo.email : userInfo.email,
-                            phone: isGuestCheckout ? guestInfo.phone : (userInfo.phone || ''),
+                            name: userInfo.first_name + ' ' + userInfo.last_name,
+                            email: userInfo.email,
+                            phone: userInfo.phone || '',
                         },
                     },
                 },
@@ -365,7 +287,7 @@ const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProces
 
             if (paymentIntent && paymentIntent.status == 'succeeded') {
                 const subscriptionDetails = {
-                    user_id: userInfo ? userInfo.id : null,
+                    user_id: userInfo.id,
                     cartItems: [
                         {
                             service_id: product.id.toString(),
@@ -381,8 +303,8 @@ const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProces
                     transaction_id: subscriptionId,
                     amount: paymentIntent.amount / 100,
                     promoCode: "", // If you have a promo code logic, replace it accordingly
-                    payer_name: userInfo ? (userInfo.first_name + " " + userInfo.last_name) : (guestInfo.first_name + " " + guestInfo.last_name),
-                    payer_email: userInfo ? userInfo.email : guestInfo.email,
+                    payer_name: userInfo.first_name + " " + userInfo.last_name,
+                    payer_email: userInfo.email,
                     payment_method: "stripe",
                     order_type: "subscription"
                 };
