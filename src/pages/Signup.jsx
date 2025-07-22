@@ -57,6 +57,7 @@ const Signup = () => {
 
             reset();
         } catch (error) {
+            console.log(error)
             toast.error(error.response?.data?.message || error.message, {
                 position: "top-center",
                 autoClose: 10000,
