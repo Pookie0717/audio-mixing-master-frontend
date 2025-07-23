@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_ENDPOINT } from '../utils/constants';
+import audioImagesData from '../mocks/audioImages.json';
 
 export const useBlogPosts = (params = {}) => {
     const [posts, setPosts] = useState([]);
@@ -12,6 +13,22 @@ export const useBlogPosts = (params = {}) => {
         total_items: 0,
         per_page: 9
     });
+
+    // Function to get a unique audio image based on post ID
+    const getUniqueAudioImage = (postId, isLarge = false) => {
+        const images = audioImagesData.images;
+        const index = (postId - 1) % images.length;
+        const imageUrl = images[index].url;
+        
+        // Modify URL for different sizes
+        if (isLarge) {
+            // For single blog posts - larger size
+            return imageUrl.replace('&h=650&w=940', '&h=400&w=800');
+        } else {
+            // For blog list - smaller size
+            return imageUrl.replace('&h=650&w=940', '&h=250&w=400');
+        }
+    };
 
     // Fetch posts from backend
     const fetchPosts = async (filters = {}) => {
@@ -66,7 +83,7 @@ export const useBlogPosts = (params = {}) => {
                 author: post.author_name || post.author || 'Audio Expert',
                 date: post.publish_date || post.created_at || new Date().toISOString(),
                 readTime: post.read_time ? `${post.read_time} min read` : '8 min read',
-                image: post.featured_image || post.image || `https://picsum.photos/400/250?random=${post.id}`,
+                image: post.featured_image || post.image || getUniqueAudioImage(post.id, false),
                 featured: post.is_featured || post.featured || false,
                 slug: post.slug || `blog-post-${post.id}`,
                 status: post.is_published ? 'published' : 'draft',
@@ -99,40 +116,6 @@ export const useBlogPosts = (params = {}) => {
         }
     };
 
-    // Generate fallback posts if API fails
-    const generateFallbackPosts = () => {
-        const blogTitles = [
-            "The History of Mixing and Mastering",
-            "Tips On Recording Vocals", 
-            "Background Vocals",
-            "EQ Tips & Tricks",
-            "20 Tips On Home Mastering",
-            "How to Approach Major Recording Studio for a Sound Engineer Job",
-            "HOW TO SUBMIT MUSIC FOR TV & FILM",
-            "HOW TO SET UP A GOOD MIX",
-            "Beginner's Series on Recording",
-            "Mixdown preparation"
-        ];
-
-        return blogTitles.map((title, index) => ({
-            id: index + 1,
-            title: title,
-            excerpt: `Discover the latest techniques and insights in audio mixing and mastering. This comprehensive guide covers everything you need to know about professional audio production.`,
-            content: `<p>This is a fallback blog post content for ${title}.</p>`,
-            category_id: 'all',
-            category_name: 'Audio Production',
-            author: `Audio Expert ${index + 1}`,
-            date: `2024-01-${(index % 30 + 1).toString().padStart(2, '0')}`,
-            readTime: `${5 + (index % 10)} min read`,
-            image: `https://picsum.photos/400/250?random=${index + 1}`,
-            featured: index === 0,
-            slug: `blog-post-${index + 1}`,
-            status: 'published',
-            keywords: '',
-            views: 0
-        }));
-    };
-
     // Get a single post by ID
     const getPostById = async (postId) => {
         try {
@@ -157,7 +140,7 @@ export const useBlogPosts = (params = {}) => {
                 author: postData.author_name || postData.author || 'Audio Expert',
                 date: postData.publish_date || postData.created_at || new Date().toISOString(),
                 readTime: postData.read_time ? `${postData.read_time} min read` : '8 min read',
-                image: postData.featured_image || postData.image || `https://picsum.photos/800/400?random=${postData.id}`,
+                image: postData.featured_image || postData.image || getUniqueAudioImage(postData.id, true),
                 featured: postData.is_featured || postData.featured || false,
                 slug: postData.slug || `blog-post-${postData.id}`,
                 status: postData.is_published ? 'published' : 'draft',

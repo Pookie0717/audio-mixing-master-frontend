@@ -6,6 +6,7 @@ import PurpleShadowBG from "../assets/images/purple-shadow-bg.webp";
 import GreenShadowBG from "../assets/images/green-shadow-bg.webp";
 import axios from 'axios';
 import { API_ENDPOINT } from '../utils/constants';
+import audioImagesData from '../mocks/audioImages.json';
 
 export default function BlogPost() {
     const { postId } = useParams();
@@ -13,6 +14,16 @@ export default function BlogPost() {
     const [relatedPosts, setRelatedPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Function to get a unique audio image based on post ID
+    const getUniqueAudioImage = (postId) => {
+        const images = audioImagesData.images;
+        const index = (postId - 1) % images.length;
+        const imageUrl = images[index].url;
+        
+        // For related posts - smaller size
+        return imageUrl.replace('&h=650&w=940', '&h=250&w=400');
+    };
 
     // Function to extract content from HTML template
     const extractContentFromHTML = (htmlContent) => {
@@ -67,6 +78,7 @@ export default function BlogPost() {
                 
                 // Extract the actual content from HTML template
                 const extractedContent = extractContentFromHTML(postData.html_content);
+                
                 // Transform the post data
                 const transformedPost = {
                     id: postData.id,
@@ -78,7 +90,7 @@ export default function BlogPost() {
                     author: postData.author_name || postData.author || 'Audio Expert',
                     date: postData.publish_date || postData.created_at || new Date().toISOString(),
                     readTime: postData.read_time ? `${postData.read_time} min read` : '8 min read',
-                    image: postData.featured_image || postData.image || `https://picsum.photos/800/400?random=${postData.id}`,
+                    image: postData.featured_image || postData.image || getUniqueAudioImage(postData.id),
                     featured: postData.is_featured || postData.featured || false,
                     slug: postData.slug || `blog-post-${postData.id}`,
                     status: postData.is_published ? 'published' : 'draft',
@@ -117,7 +129,7 @@ export default function BlogPost() {
                         author: relatedPost.author_name || relatedPost.author || 'Audio Expert',
                         date: relatedPost.publish_date || relatedPost.created_at || new Date().toISOString(),
                         readTime: relatedPost.read_time ? `${relatedPost.read_time} min read` : '8 min read',
-                        image: relatedPost.featured_image || relatedPost.image || `https://picsum.photos/400/250?random=${relatedPost.id}`,
+                        image: relatedPost.featured_image || relatedPost.image || getUniqueAudioImage(relatedPost.id),
                         slug: relatedPost.slug || `blog-post-${relatedPost.id}`
                     }));
                     

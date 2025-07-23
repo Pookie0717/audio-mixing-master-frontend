@@ -98,36 +98,23 @@ const Blog = () => {
                             Audio <span className="text-[#4CC800]">Blog</span>
                         </h1>
                         <p className="font-Roboto text-lg md:text-xl text-gray-300 max-w-2xl mx-auto">
-                            Discover the latest insights, tips, and techniques in audio mixing, mastering, and music production.
+                            Discover the latest insights, tips, and techniques in audio mixing and mastering. From beginner guides to advanced production secrets.
                         </p>
                     </div>
 
                     {/* Category Filter */}
                     {categoriesLoading ? (
                         <CategorySkeleton />
-                    ) : categoriesError ? (
-                        <div className="text-center mb-12">
-                            <p className="text-red-400 mb-4">Error loading categories: {categoriesError}</p>
-                            <button 
-                                onClick={() => window.location.reload()} 
-                                className="px-6 py-3 bg-[#4DC801] text-white rounded-full font-Montserrat font-medium hover:bg-[#3ba001] transition-colors duration-300"
-                            >
-                                Retry
-                            </button>
-                        </div>
                     ) : (
                         <div className="flex flex-wrap justify-center gap-4 mb-12">
                             {categories.map(category => (
                                 <button
                                     key={category.id}
-                                    onClick={() => {
-                                        setSelectedCategory(category.id);
-                                        setCurrentPage(1);
-                                    }}
-                                    className={`px-6 py-3 rounded-full font-Montserrat font-medium text-sm md:text-base transition-all duration-300 ${
+                                    onClick={() => setSelectedCategory(category.id)}
+                                    className={`px-6 py-3 rounded-full font-Montserrat font-medium transition-all duration-300 ${
                                         selectedCategory === category.id
                                             ? 'bg-[#4DC801] text-white'
-                                            : 'border border-gray-600 text-gray-300 hover:border-[#4CC800] hover:text-[#4CC800]'
+                                            : 'bg-transparent border border-gray-600 text-gray-300 hover:border-[#4DC801] hover:text-[#4DC801]'
                                     }`}
                                 >
                                     {category.name}
@@ -136,23 +123,13 @@ const Blog = () => {
                         </div>
                     )}
 
-                    {/* Error Display for Posts */}
-                    {postsError && (
-                        <div className="text-center mb-12">
-                            <p className="text-red-400 mb-4">Error loading blog posts: {postsError}</p>
-                            <button 
-                                onClick={() => fetchPosts({ page: currentPage, per_page: postsPerPage })} 
-                                className="px-6 py-3 bg-[#4DC801] text-white rounded-full font-Montserrat font-medium hover:bg-[#3ba001] transition-colors duration-300"
-                            >
-                                Retry
-                            </button>
-                        </div>
-                    )}
-
                     {/* Featured Post */}
                     {featuredPost && (
                         <div className="mb-16">
-                            <div className="bg-[#0B1306] rounded-[30px] p-8">
+                            <Link 
+                                to={`/blog/${featuredPost.slug}`}
+                                className="block bg-[#0B1306] rounded-[30px] p-8 hover:transform hover:scale-105 transition-all duration-300"
+                            >
                                 <div className="grid lg:grid-cols-2 gap-8 items-center">
                                     <div>
                                         <div className="flex items-center gap-4 mb-4 text-sm text-gray-400">
@@ -170,12 +147,9 @@ const Blog = () => {
                                             <div className="inline-block bg-[#4DC801] text-white px-4 py-2 rounded-full text-sm font-medium">
                                                 {featuredPost.category_name || 'Audio Production'}
                                             </div>
-                                            <Link
-                                                to={`/blog/${featuredPost.slug}`}
-                                                className="text-[#4CC800] hover:text-[#3ba001] font-medium transition-colors duration-300"
-                                            >
+                                            <span className="text-[#4CC800] font-medium">
                                                 Read More →
-                                            </Link>
+                                            </span>
                                         </div>
                                     </div>
                                     <div>
@@ -186,7 +160,7 @@ const Blog = () => {
                                         />
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         </div>
                     )}
 
@@ -197,7 +171,11 @@ const Blog = () => {
                         <>
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
                                 {regularPosts.map(post => (
-                                    <article key={post.id} className="bg-[#0B1306] rounded-[20px] overflow-hidden hover:transform hover:scale-105 transition-all duration-300">
+                                    <Link
+                                        key={post.id}
+                                        to={`/blog/${post.slug}`}
+                                        className="block bg-[#0B1306] rounded-[20px] overflow-hidden hover:transform hover:scale-105 transition-all duration-300"
+                                    >
                                         <div className="relative">
                                             <img 
                                                 src={post.image} 
@@ -222,15 +200,12 @@ const Blog = () => {
                                             </p>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-400">{post.readTime}</span>
-                                                <Link
-                                                    to={`/blog/${post.slug}`}
-                                                    className="text-[#4CC800] hover:text-[#3ba001] font-medium transition-colors duration-300"
-                                                >
+                                                <span className="text-[#4CC800] font-medium">
                                                     Read More →
-                                                </Link>
+                                                </span>
                                             </div>
                                         </div>
-                                    </article>
+                                    </Link>
                                 ))}
                             </div>
 
@@ -249,7 +224,7 @@ const Blog = () => {
                                         <button
                                             key={page}
                                             onClick={() => setCurrentPage(page)}
-                                            className={`px-4 py-2 rounded-full transition-colors duration-300 ${
+                                            className={`px-4 py-2 rounded-full font-medium transition-colors duration-300 ${
                                                 currentPage === page
                                                     ? 'bg-[#4DC801] text-white'
                                                     : 'border border-gray-600 text-gray-300 hover:border-[#4CC800] hover:text-[#4CC800]'
@@ -269,19 +244,11 @@ const Blog = () => {
                                 </div>
                             )}
 
-                            {/* No Posts Message */}
-                            {!postsLoading && regularPosts.length === 0 && (
+                            {/* No posts found message */}
+                            {regularPosts.length === 0 && !postsLoading && (
                                 <div className="text-center py-12">
-                                    <p className="text-gray-400 text-lg mb-4">No blog posts found for this category.</p>
-                                    <button
-                                        onClick={() => {
-                                            setSelectedCategory('all');
-                                            setCurrentPage(1);
-                                        }}
-                                        className="px-6 py-3 bg-[#4DC801] text-white rounded-full font-Montserrat font-medium hover:bg-[#3ba001] transition-colors duration-300"
-                                    >
-                                        View All Posts
-                                    </button>
+                                    <h3 className="font-THICCCBOI-Medium text-xl mb-4">No posts found</h3>
+                                    <p className="text-gray-300">Try selecting a different category or check back later for new content.</p>
                                 </div>
                             )}
                         </>

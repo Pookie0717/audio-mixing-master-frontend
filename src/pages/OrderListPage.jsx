@@ -21,7 +21,7 @@ const OrderListPage = () => {
         const fetchOrders = async (page) => {
             setLoading(true); // Start loading
             try {
-                const response = await axios(`${API_ENDPOINT}orders?page=${page}&per_page=${itemsPerPage}`, {
+                const response = await axios(`${API_ENDPOINT}user-orders/${user.user.id}?page=${page}&per_page=${itemsPerPage}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -29,9 +29,9 @@ const OrderListPage = () => {
                         'Authorization': `Bearer ${user}`,
                     },
                 });
-                setOrders(response.data.data);
-                setCurrentPage(response.data.current_page);
-                setPageCount(response.data.last_page);
+                setOrders(response.data.data.orders);
+                setCurrentPage(response.data.data.pagination.page);
+                setPageCount(response.data.data.pagination.pages);
             } catch (error) {
                 // Handle error silently
             } finally {
@@ -88,36 +88,39 @@ const OrderListPage = () => {
                                     <h4 className="font-THICCCBOI-Bold font-bold text-lg w-1/6 text-center">Date</h4>
                                 </div>
 
-                                {orders.map((order) => (
-                                    <Link to={`/order/${order.id}`} key={order.id} className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-5 p-5 bg-black text-white rounded-[20px] shadow-md relative">
-                                        {/* Mobile labels */}
-                                        {Number(order?.notify) == 1 ? <span className="absolute -top-2 -left-3 bg-[#4CC800] text-white font-THICCCBOI-Medium text-sm px-3 py-1 rounded-full">New Update</span> : null}
-                                        <div className="w-full md:w-1/6 flex justify-between md:justify-center">
-                                            <p className="md:hidden text-base font-semibold">Order ID</p>
-                                            <p className="font-THICCCBOI-Medium font-medium text-lg text-center truncate">{order.id}</p>
-                                        </div>
-                                        <div className="w-full md:w-1/6 flex justify-between md:justify-center">
-                                            <p className="md:hidden text-base font-semibold">Transaction ID</p>
-                                            <p className="font-THICCCBOI-Medium font-medium text-lg text-center truncate">{order.transaction_id}</p>
-                                        </div>
-                                        <div className="w-full md:w-1/6 flex justify-between md:justify-center">
-                                            <p className="md:hidden text-base font-semibold">Amount</p>
-                                            <p className="font-THICCCBOI-Medium font-medium text-lg text-center">{order.amount} {order.currency}</p>
-                                        </div>
-                                        <div className="w-full md:w-1/6 flex justify-between md:justify-center">
-                                            <p className="md:hidden text-base font-semibold">Order Type</p>
-                                            <p className="font-THICCCBOI-Medium font-medium text-lg text-center">{order.order_type}</p>
-                                        </div>
-                                        <div className="w-full md:w-1/6 flex justify-between md:justify-center">
-                                            <p className="md:hidden text-base font-semibold">Status</p>
-                                            <p className="font-THICCCBOI-Medium font-medium text-lg text-center truncate">{order.payment_status}</p>
-                                        </div>
-                                        <div className="w-full md:w-1/6 flex justify-between md:justify-center">
-                                            <p className="md:hidden text-base font-semibold">Date</p>
-                                            <p className="font-THICCCBOI-Medium font-medium text-lg text-center truncate">{new Date(order.created_at).toLocaleDateString()}</p>
-                                        </div>
-                                    </Link>
-                                ))}
+                                {orders.map((orderData) => {
+                                    const order = orderData.order;
+                                    return (
+                                        <Link to={`/order/${order.id}`} key={order.id} className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-5 p-5 bg-black text-white rounded-[20px] shadow-md relative">
+                                            {/* Mobile labels */}
+                                            {Number(order?.notify) == 1 ? <span className="absolute -top-2 -left-3 bg-[#4CC800] text-white font-THICCCBOI-Medium text-sm px-3 py-1 rounded-full">New Update</span> : null}
+                                            <div className="w-full md:w-1/6 flex justify-between md:justify-center">
+                                                <p className="md:hidden text-base font-semibold">Order ID</p>
+                                                <p className="font-THICCCBOI-Medium font-medium text-lg text-center truncate">{order.id}</p>
+                                            </div>
+                                            <div className="w-full md:w-1/6 flex justify-between md:justify-center">
+                                                <p className="md:hidden text-base font-semibold">Transaction ID</p>
+                                                <p className="font-THICCCBOI-Medium font-medium text-lg text-center truncate">{order.transaction_id}</p>
+                                            </div>
+                                            <div className="w-full md:w-1/6 flex justify-between md:justify-center">
+                                                <p className="md:hidden text-base font-semibold">Amount</p>
+                                                <p className="font-THICCCBOI-Medium font-medium text-lg text-center">{order.amount} {order.currency}</p>
+                                            </div>
+                                            <div className="w-full md:w-1/6 flex justify-between md:justify-center">
+                                                <p className="md:hidden text-base font-semibold">Order Type</p>
+                                                <p className="font-THICCCBOI-Medium font-medium text-lg text-center">{order.order_type}</p>
+                                            </div>
+                                            <div className="w-full md:w-1/6 flex justify-between md:justify-center">
+                                                <p className="md:hidden text-base font-semibold">Status</p>
+                                                <p className="font-THICCCBOI-Medium font-medium text-lg text-center truncate">{order.payment_status}</p>
+                                            </div>
+                                            <div className="w-full md:w-1/6 flex justify-between md:justify-center">
+                                                <p className="md:hidden text-base font-semibold">Date</p>
+                                                <p className="font-THICCCBOI-Medium font-medium text-lg text-center truncate">{new Date(order.created_at).toLocaleDateString()}</p>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
                             </div>
                             {pageCount > 0 && (
                                 <div className='flex justify-center mt-24'>

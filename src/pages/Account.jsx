@@ -67,7 +67,7 @@ const Account = () => {
                     }
                 );
                 // Ensure orders is always an array
-                const ordersData = response.data?.data || [];
+                const ordersData = response.data?.data.orders || [];
                 setOrders(Array.isArray(ordersData) ? ordersData : []);
             } catch (error) {
                 // Handle error silently

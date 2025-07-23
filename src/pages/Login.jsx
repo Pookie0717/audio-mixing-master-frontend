@@ -85,7 +85,6 @@ const Login = () => {
 
             const redirectPath = sessionStorage.getItem('previousPage') || '/account';
             navigate(redirectPath, { replace: true });
-
         } catch (error) {
             toast.error(error.response?.data?.error, {
                 position: "top-center",

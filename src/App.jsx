@@ -23,6 +23,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgetPassword from './pages/ForgetPassoword';
 import ResetPassword from './pages/ResetPassword';
+import EmailVerification from './pages/EmailVerification';
 import OrderConfirmation from './pages/OrderConfirmation';
 import NotFound from './pages/NotFound';
 
@@ -93,6 +94,10 @@ const router = createBrowserRouter([
   {
     path: "/reset-password/:email/:token",
     element: (<RestrictedRoute redirectIfLoggedIn="/"><ResetPassword /></RestrictedRoute>),
+  },
+  {
+    path: "/verify-email/:userId/:token",
+    element: (<RestrictedRoute redirectIfLoggedIn="/"><EmailVerification /></RestrictedRoute>),
   },
   {
     path: '*',
