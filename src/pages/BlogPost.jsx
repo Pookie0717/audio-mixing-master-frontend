@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { ArrowLeftIcon, ClockIcon, UserIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, ClockIcon, UserIcon, CalendarIcon, TagIcon } from '@heroicons/react/24/outline';
 import Skeleton from 'react-loading-skeleton';
 import PurpleShadowBG from "../assets/images/purple-shadow-bg.webp";
 import GreenShadowBG from "../assets/images/green-shadow-bg.webp";
 import axios from 'axios';
 import { API_ENDPOINT } from '../utils/constants';
 import audioImagesData from '../mocks/audioImages.json';
+import SEO from '../components/SEO';
 
 export default function BlogPost() {
     const { postId } = useParams();
@@ -60,6 +61,38 @@ export default function BlogPost() {
             console.error('Error parsing HTML content:', error);
             return htmlContent;
         }
+    };
+
+    // Function to render keywords as tags
+    const renderKeywords = (keywords) => {
+        if (!keywords) return null;
+        
+        // Handle both string and array formats
+        let keywordArray = [];
+        if (typeof keywords === 'string') {
+            keywordArray = keywords.split(',').map(k => k.trim()).filter(k => k);
+        } else if (Array.isArray(keywords)) {
+            keywordArray = keywords;
+        }
+        
+        if (keywordArray.length === 0) return null;
+        
+        return (
+            <div className="flex flex-wrap gap-2 mt-4">
+                <div className="flex items-center gap-2 text-gray-400">
+                    <TagIcon className="w-4 h-4" />
+                    <span className="text-sm font-medium">Keywords:</span>
+                </div>
+                {keywordArray.map((keyword, index) => (
+                    <span 
+                        key={index}
+                        className="bg-[#1a1a1a] text-[#4CC800] px-3 py-1 rounded-full text-sm font-medium border border-[#4CC800] border-opacity-30 hover:bg-[#4CC800] hover:text-black transition-all duration-300"
+                    >
+                        {keyword}
+                    </span>
+                ))}
+            </div>
+        );
     };
 
     useEffect(() => {
@@ -162,6 +195,36 @@ export default function BlogPost() {
         });
     };
 
+    // Structured data for blog post
+    const blogPostStructuredData = post ? {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": post.title,
+        "description": post.excerpt,
+        "image": post.image,
+        "author": {
+            "@type": "Person",
+            "name": post.author
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "AudioMixingMastering",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://www.audiomixingmastering.com/src/assets/images/logo.png"
+            }
+        },
+        "datePublished": post.date,
+        "dateModified": post.date,
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": `https://www.audiomixingmastering.com/blog/${post.slug}`
+        },
+        "keywords": post.keywords,
+        "articleSection": post.category_name,
+        "wordCount": post.content ? post.content.replace(/<[^>]*>/g, '').split(' ').length : 0
+    } : null;
+
     if (loading) {
         return (
             <main className='mt-24'>
@@ -252,144 +315,158 @@ export default function BlogPost() {
     }
 
     return (
-        <main className='mt-24'>
-            {/* Hero Section */}
-            <section className="text-white relative z-20 mb-24 px-5 md:px-10 xl:px-0">
-                <picture>
-                    <source srcSet={GreenShadowBG} type="image/webp" />
-                    <img src={GreenShadowBG} className="absolute -top-full left-0 pointer-events-none" alt="Green Shadow Background" />
-                </picture>
-                <picture>
-                    <source srcSet={PurpleShadowBG} type="image/webp" />
-                    <img src={PurpleShadowBG} className="absolute -top-3/4 right-0 pointer-events-none" alt="Purple Shadow Background" />
-                </picture>
-                
-                <div className="max-w-[1110px] relative z-20 mx-auto">
-                    {/* Back Button */}
-                    <div className="mb-8">
-                        <RouterLink
-                            to="/blog"
-                            className="inline-flex items-center text-[#4CC800] hover:text-[#3ba001] font-Montserrat font-medium transition-colors duration-300"
-                        >
-                            <ArrowLeftIcon className="w-5 h-5 mr-2" />
-                            Back to Blog
-                        </RouterLink>
-                    </div>
-
-                    {/* Article Header */}
-                    <div className="bg-[#0B1306] rounded-[30px] p-8 mb-12">
+        <>
+            <SEO 
+                title={post.title}
+                description={post.excerpt}
+                keywords={post.keywords}
+                image={post.image}
+                url={`/blog/${post.slug}`}
+                type="article"
+                structuredData={blogPostStructuredData}
+            />
+            <main className='mt-24'>
+                {/* Hero Section */}
+                <section className="text-white relative z-20 mb-24 px-5 md:px-10 xl:px-0">
+                    <picture>
+                        <source srcSet={GreenShadowBG} type="image/webp" />
+                        <img src={GreenShadowBG} className="absolute -top-full left-0 pointer-events-none" alt="Green Shadow Background" />
+                    </picture>
+                    <picture>
+                        <source srcSet={PurpleShadowBG} type="image/webp" />
+                        <img src={PurpleShadowBG} className="absolute -top-3/4 right-0 pointer-events-none" alt="Purple Shadow Background" />
+                    </picture>
+                    
+                    <div className="max-w-[1110px] relative z-20 mx-auto">
+                        {/* Back Button */}
                         <div className="mb-8">
-                            <img 
-                                src={post.image} 
-                                alt={post.title}
-                                className="w-full h-[300px] md:h-[400px] object-cover rounded-[20px]"
+                            <RouterLink
+                                to="/blog"
+                                className="inline-flex items-center text-[#4CC800] hover:text-[#3ba001] font-Montserrat font-medium transition-colors duration-300"
+                            >
+                                <ArrowLeftIcon className="w-5 h-5 mr-2" />
+                                Back to Blog
+                            </RouterLink>
+                        </div>
+
+                        {/* Article Header */}
+                        <div className="bg-[#0B1306] rounded-[30px] p-8 mb-12">
+                            <div className="mb-8">
+                                <img 
+                                    src={post.image} 
+                                    alt={post.title}
+                                    className="w-full h-[300px] md:h-[400px] object-cover rounded-[20px]"
+                                />
+                            </div>
+                            
+                            <div className="flex items-center gap-4 mb-6 text-sm text-gray-400">
+                                <div className="flex items-center gap-2">
+                                    <UserIcon className="w-4 h-4" />
+                                    <span>{post.author}</span>
+                                </div>
+                                <span>•</span>
+                                <div className="flex items-center gap-2">
+                                    <CalendarIcon className="w-4 h-4" />
+                                    <span>{formatDate(post.date)}</span>
+                                </div>
+                                <span>•</span>
+                                <div className="flex items-center gap-2">
+                                    <ClockIcon className="w-4 h-4" />
+                                    <span>{post.readTime}</span>
+                                </div>
+                            </div>
+
+                            <h1 className="font-THICCCBOI-Medium text-3xl md:text-4xl lg:text-5xl leading-tight mb-6">
+                                {post.title}
+                            </h1>
+
+                            <p className="text-gray-300 text-lg leading-relaxed mb-6">
+                                {post.excerpt}
+                            </p>
+
+                            <div className="inline-block bg-[#4DC801] text-white px-4 py-2 rounded-full text-sm font-medium">
+                                {post.category_name || 'Audio Production'}
+                            </div>
+
+                            {/* Keywords Display */}
+                            {renderKeywords(post.keywords)}
+                        </div>
+
+                        {/* Article Content */}
+                        <div className="bg-[#0B1306] rounded-[30px] p-8 mb-12">
+                            <div 
+                                className="prose prose-invert prose-lg max-w-none"
+                                dangerouslySetInnerHTML={{ __html: post.content }}
+                                style={{
+                                    '--tw-prose-body': '#d1d5db',
+                                    '--tw-prose-headings': '#ffffff',
+                                    '--tw-prose-links': '#4CC800',
+                                    '--tw-prose-bold': '#ffffff',
+                                    '--tw-prose-counters': '#6b7280',
+                                    '--tw-prose-bullets': '#6b7280',
+                                    '--tw-prose-hr': '#374151',
+                                    '--tw-prose-quotes': '#f3f4f6',
+                                    '--tw-prose-quote-borders': '#4CC800',
+                                    '--tw-prose-captions': '#9ca3af',
+                                    '--tw-prose-code': '#ffffff',
+                                    '--tw-prose-pre-code': '#d1d5db',
+                                    '--tw-prose-pre-bg': '#1f2937',
+                                    '--tw-prose-pre-border': '#374151',
+                                    '--tw-prose-th-borders': '#4b5563',
+                                    '--tw-prose-td-borders': '#374151',
+                                }}
                             />
                         </div>
-                        
-                        <div className="flex items-center gap-4 mb-6 text-sm text-gray-400">
-                            <div className="flex items-center gap-2">
-                                <UserIcon className="w-4 h-4" />
-                                <span>{post.author}</span>
-                            </div>
-                            <span>•</span>
-                            <div className="flex items-center gap-2">
-                                <CalendarIcon className="w-4 h-4" />
-                                <span>{formatDate(post.date)}</span>
-                            </div>
-                            <span>•</span>
-                            <div className="flex items-center gap-2">
-                                <ClockIcon className="w-4 h-4" />
-                                <span>{post.readTime}</span>
-                            </div>
-                        </div>
 
-                        <h1 className="font-THICCCBOI-Medium text-3xl md:text-4xl lg:text-5xl leading-tight mb-6">
-                            {post.title}
-                        </h1>
-
-                        <p className="text-gray-300 text-lg leading-relaxed mb-6">
-                            {post.excerpt}
-                        </p>
-
-                        <div className="inline-block bg-[#4DC801] text-white px-4 py-2 rounded-full text-sm font-medium">
-                            {post.category_name || 'Audio Production'}
-                        </div>
+                        {/* Related Posts */}
+                        {relatedPosts.length > 0 && (
+                            <div className="bg-[#0B1306] rounded-[30px] p-8">
+                                <h2 className="font-THICCCBOI-Medium text-2xl md:text-3xl mb-8">
+                                    Related Articles
+                                </h2>
+                                <div className="grid md:grid-cols-3 gap-8">
+                                    {relatedPosts.map(relatedPost => (
+                                        <article key={relatedPost.id} className="bg-black rounded-[20px] overflow-hidden hover:transform hover:scale-105 transition-all duration-300">
+                                            <div className="relative">
+                                                <img 
+                                                    src={relatedPost.image} 
+                                                    alt={relatedPost.title}
+                                                    className="w-full h-48 object-cover"
+                                                />
+                                                <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                                    {relatedPost.category_name || 'Audio Production'}
+                                                </div>
+                                            </div>
+                                            <div className="p-6">
+                                                <div className="flex items-center gap-4 mb-3 text-sm text-gray-400">
+                                                    <span>{relatedPost.author}</span>
+                                                    <span>•</span>
+                                                    <span>{formatDate(relatedPost.date)}</span>
+                                                </div>
+                                                <h3 className="font-THICCCBOI-Medium text-xl leading-tight mb-3 line-clamp-2">
+                                                    {relatedPost.title}
+                                                </h3>
+                                                <p className="text-gray-300 mb-4 line-clamp-3 leading-relaxed">
+                                                    {relatedPost.excerpt}
+                                                </p>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-gray-400">{relatedPost.readTime}</span>
+                                                    <RouterLink
+                                                        to={`/blog/${relatedPost.slug}`}
+                                                        className="text-[#4CC800] hover:text-[#3ba001] font-medium transition-colors duration-300"
+                                                    >
+                                                        Read More →
+                                                    </RouterLink>
+                                                </div>
+                                            </div>
+                                        </article>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
-
-                    {/* Article Content */}
-                    <div className="bg-[#0B1306] rounded-[30px] p-8 mb-12">
-                        <div 
-                            className="prose prose-invert prose-lg max-w-none"
-                            dangerouslySetInnerHTML={{ __html: post.content }}
-                            style={{
-                                '--tw-prose-body': '#d1d5db',
-                                '--tw-prose-headings': '#ffffff',
-                                '--tw-prose-links': '#4CC800',
-                                '--tw-prose-bold': '#ffffff',
-                                '--tw-prose-counters': '#6b7280',
-                                '--tw-prose-bullets': '#6b7280',
-                                '--tw-prose-hr': '#374151',
-                                '--tw-prose-quotes': '#f3f4f6',
-                                '--tw-prose-quote-borders': '#4CC800',
-                                '--tw-prose-captions': '#9ca3af',
-                                '--tw-prose-code': '#ffffff',
-                                '--tw-prose-pre-code': '#d1d5db',
-                                '--tw-prose-pre-bg': '#1f2937',
-                                '--tw-prose-pre-border': '#374151',
-                                '--tw-prose-th-borders': '#4b5563',
-                                '--tw-prose-td-borders': '#374151',
-                            }}
-                        />
-                    </div>
-
-                    {/* Related Posts */}
-                    {relatedPosts.length > 0 && (
-                        <div className="bg-[#0B1306] rounded-[30px] p-8">
-                            <h2 className="font-THICCCBOI-Medium text-2xl md:text-3xl mb-8">
-                                Related Articles
-                            </h2>
-                            <div className="grid md:grid-cols-3 gap-8">
-                                {relatedPosts.map(relatedPost => (
-                                    <article key={relatedPost.id} className="bg-black rounded-[20px] overflow-hidden hover:transform hover:scale-105 transition-all duration-300">
-                                        <div className="relative">
-                                            <img 
-                                                src={relatedPost.image} 
-                                                alt={relatedPost.title}
-                                                className="w-full h-48 object-cover"
-                                            />
-                                            <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-sm font-medium">
-                                                {relatedPost.category_name || 'Audio Production'}
-                                            </div>
-                                        </div>
-                                        <div className="p-6">
-                                            <div className="flex items-center gap-4 mb-3 text-sm text-gray-400">
-                                                <span>{relatedPost.author}</span>
-                                                <span>•</span>
-                                                <span>{formatDate(relatedPost.date)}</span>
-                                            </div>
-                                            <h3 className="font-THICCCBOI-Medium text-xl leading-tight mb-3 line-clamp-2">
-                                                {relatedPost.title}
-                                            </h3>
-                                            <p className="text-gray-300 mb-4 line-clamp-3 leading-relaxed">
-                                                {relatedPost.excerpt}
-                                            </p>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-400">{relatedPost.readTime}</span>
-                                                <RouterLink
-                                                    to={`/blog/${relatedPost.slug}`}
-                                                    className="text-[#4CC800] hover:text-[#3ba001] font-medium transition-colors duration-300"
-                                                >
-                                                    Read More →
-                                                </RouterLink>
-                                            </div>
-                                        </div>
-                                    </article>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </section>
-        </main>
+                </section>
+            </main>
+        </>
     );
 } 

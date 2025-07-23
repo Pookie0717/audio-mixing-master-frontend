@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { HelmetProvider } from 'react-helmet-async';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
@@ -205,5 +206,9 @@ export default function App() {
     return <Preloader />;  // Show Preloader until loading is false
   }
 
-  return <RouterProvider router={router} />;
+  return (
+    <HelmetProvider>
+      <RouterProvider router={router} />
+    </HelmetProvider>
+  );
 }
