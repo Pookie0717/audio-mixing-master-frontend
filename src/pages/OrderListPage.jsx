@@ -9,6 +9,7 @@ import { useSelector } from 'react-redux';
 import { selectUser } from '../reducers/authSlice';
 import PurpleShadowBG from "../assets/images/purple-shadow-bg.webp";
 import GreenShadowBG from "../assets/images/green-shadow-bg.webp";
+import { getUserToken } from '../reducers/authSlice';
 
 const OrderListPage = () => {
     const [orders, setOrders] = useState([]);
@@ -18,28 +19,28 @@ const OrderListPage = () => {
     const [pageCount, setPageCount] = useState(0);
 
     useEffect(() => {
-        const fetchOrders = async (page) => {
-            setLoading(true); // Start loading
+        const fetchOrders = async () => {
+            setLoading(true);
             try {
-                const response = await axios(`${API_ENDPOINT}user-orders/${user.user.id}?page=${page}&per_page=${itemsPerPage}`, {
+                const response = await axios(`${API_ENDPOINT}user-orders/${user.user.id}?page=${currentPage}&per_page=${itemsPerPage}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'Authorization': `Bearer ${user}`,
+                        'Authorization': `Bearer ${getUserToken(user)}`,
                     },
                 });
                 setOrders(response.data.data.orders);
-                setCurrentPage(response.data.data.pagination.page);
                 setPageCount(response.data.data.pagination.pages);
+                // Don't update currentPage here; it may cause unnecessary re-renders
             } catch (error) {
-                // Handle error silently
+                console.log(error);
             } finally {
                 setLoading(false);
             }
         };
-
-        fetchOrders(currentPage);
+    
+        fetchOrders();
     }, [currentPage]);
 
     const handlePageClick = (data) => {

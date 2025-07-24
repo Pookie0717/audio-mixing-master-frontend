@@ -11,6 +11,7 @@ import { selectUserInfo } from '../reducers/userSlice';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
 import { API_ENDPOINT } from '../utils/constants';
+import { getUserToken } from '../reducers/authSlice';
 
 // Initialize Stripe with your publishable key
 const stripePromise = loadStripe('pk_test_51MuE4RJIWkcGZUIabXuoFFrr5gMT5S9Ynq63FfkoZMVeEkq94UdXOKwK4t3msKIsQwnLwafv9JyvzIdKpbsFonwd00BWb4lWdj');
@@ -62,7 +63,7 @@ const OneTimePurchaseModal = ({ product, onClose, quantity }) => {
                         ],
                     }, {
                         headers: {
-                            'Authorization': `Bearer ${user}`,
+                            'Authorization': `Bearer ${getUserToken(user)}`,
                         },
                     });
 
@@ -142,7 +143,7 @@ const OneTimePurchaseModal = ({ product, onClose, quantity }) => {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    ...(user && { Authorization: `Bearer ${user}` }),
+                    ...(user && { Authorization: `Bearer ${getUserToken(user)}` }),
                 },
             });
 
@@ -424,7 +425,7 @@ const StripePaymentForm = ({ product, userInfo, onClose, navigate, isProcessing,
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    ...(user && { Authorization: `Bearer ${user}` }),
+                    ...(user && { Authorization: `Bearer ${getUserToken(user)}` }),
                 },
             });
 

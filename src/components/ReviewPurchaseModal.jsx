@@ -9,6 +9,7 @@ import { API_ENDPOINT } from '../utils/constants';
 import { CheckIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import ReactStripeCheckout from 'react-stripe-checkout';
+import { getUserToken } from '../reducers/authSlice';
 
 const ReviewPurchaseModal = ({ orderId, seletedOrderItems, amount }) => {
     const user = useSelector(selectUser);
@@ -50,7 +51,7 @@ const ReviewPurchaseModal = ({ orderId, seletedOrderItems, amount }) => {
                         user_id: user.id,
                     }, {
                         headers: {
-                            'Authorization': `Bearer ${user}`,
+                            'Authorization': `Bearer ${getUserToken(user)}`,
                         },
                     });
                     setClientSecret(response.data);
@@ -94,7 +95,7 @@ const ReviewPurchaseModal = ({ orderId, seletedOrderItems, amount }) => {
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        ...(user && { Authorization: `Bearer ${user}` }),
+                        ...(user && { Authorization: `Bearer ${getUserToken(user)}` }),
                     }
                 });
 
@@ -321,7 +322,7 @@ const StripePaymentForm = ({ finalTotal, setIsPaymentComplete, isProcessing, set
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    ...(user && { Authorization: `Bearer ${user}` }),
+                    ...(user && { Authorization: `Bearer ${getUserToken(user)}` }),
                 }
             });
 

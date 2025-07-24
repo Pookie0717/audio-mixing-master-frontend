@@ -34,28 +34,48 @@ export default function BlogPost() {
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlContent, 'text/html');
             
-            // Try to find the blog content section
-            const blogContent = doc.querySelector('.blog-content');
-            if (blogContent) {
-                return blogContent.innerHTML;
+            console.log('Parsing HTML content:', htmlContent.substring(0, 200) + '...');
+            
+            // Extract styles from the original HTML
+            const styles = doc.querySelectorAll('style');
+            let extractedStyles = '';
+            styles.forEach(style => {
+                extractedStyles += style.textContent;
+            });
+            
+            // Try to find the blog content section - look for article with blog-content class
+            const blogContentArticle = doc.querySelector('article.blog-content');
+            if (blogContentArticle) {
+                console.log('Found article.blog-content, extracting content');
+                return `<style>${extractedStyles}</style>${blogContentArticle.outerHTML}`;
             }
             
-            // If no .blog-content found, try to extract from article tag
+            // Try to find any element with blog-content class
+            const blogContent = doc.querySelector('.blog-content');
+            if (blogContent) {
+                console.log('Found .blog-content, extracting content');
+                return `<style>${extractedStyles}</style>${blogContent.outerHTML}`;
+            }
+            
+            // If no .blog-content found, try to extract from any article tag
             const article = doc.querySelector('article');
             if (article) {
-                return article.innerHTML;
+                console.log('Found article tag, extracting content');
+                return `<style>${extractedStyles}</style>${article.outerHTML}`;
             }
             
             // If no article found, try to extract from body but remove header and navigation
             const body = doc.querySelector('body');
             if (body) {
+                console.log('Extracting from body, removing non-content elements');
                 // Remove header, navigation, and other non-content elements
-                const elementsToRemove = body.querySelectorAll('header, nav, .mb-8, script, style, link');
+                const elementsToRemove = body.querySelectorAll('header, nav, .mb-8, script, style, link, head');
                 elementsToRemove.forEach(el => el.remove());
-                return body.innerHTML;
+                return `<style>${extractedStyles}</style>${body.innerHTML}`;
             }
             
             // Fallback: return the original HTML content
+            console.log('Using fallback - original HTML content');
             return htmlContent;
         } catch (error) {
             console.error('Error parsing HTML content:', error);
@@ -101,16 +121,30 @@ export default function BlogPost() {
                 setLoading(true);
                 setError(null);
                 
+                console.log('Fetching blog post with ID:', postId);
+                
                 // Fetch post from backend API
                 const response = await axios.get(`${API_ENDPOINT}blogs/${postId}`);
+                
+                console.log('API Response:', response.data);
                 
                 let postData;
                 if (response.data.success && response.data.data) {
                     postData = response.data.data.blog;
+                } else if (response.data.data) {
+                    postData = response.data.data;
+                } else {
+                    postData = response.data;
                 }
+                
+                console.log('Post data:', postData);
+                console.log('HTML content length:', postData.html_content?.length || 0);
                 
                 // Extract the actual content from HTML template
                 const extractedContent = extractContentFromHTML(postData.html_content);
+                
+                console.log('Extracted content length:', extractedContent?.length || 0);
+                console.log('Extracted content preview:', extractedContent?.substring(0, 200) + '...');
                 
                 // Transform the post data
                 const transformedPost = {
@@ -130,7 +164,7 @@ export default function BlogPost() {
                     keywords: postData.keywords,
                     views: postData.views || 0
                 };
-                
+                                
                 setPost(transformedPost);
                 
                 // Fetch related posts
@@ -395,25 +429,13 @@ export default function BlogPost() {
                         {/* Article Content */}
                         <div className="bg-[#0B1306] rounded-[30px] p-8 mb-12">
                             <div 
-                                className="prose prose-invert prose-lg max-w-none"
+                                className="max-w-none"
                                 dangerouslySetInnerHTML={{ __html: post.content }}
                                 style={{
-                                    '--tw-prose-body': '#d1d5db',
-                                    '--tw-prose-headings': '#ffffff',
-                                    '--tw-prose-links': '#4CC800',
-                                    '--tw-prose-bold': '#ffffff',
-                                    '--tw-prose-counters': '#6b7280',
-                                    '--tw-prose-bullets': '#6b7280',
-                                    '--tw-prose-hr': '#374151',
-                                    '--tw-prose-quotes': '#f3f4f6',
-                                    '--tw-prose-quote-borders': '#4CC800',
-                                    '--tw-prose-captions': '#9ca3af',
-                                    '--tw-prose-code': '#ffffff',
-                                    '--tw-prose-pre-code': '#d1d5db',
-                                    '--tw-prose-pre-bg': '#1f2937',
-                                    '--tw-prose-pre-border': '#374151',
-                                    '--tw-prose-th-borders': '#4b5563',
-                                    '--tw-prose-td-borders': '#374151',
+                                    // Override any conflicting styles
+                                    color: '#d1d5db',
+                                    lineHeight: '1.8',
+                                    fontSize: '1.125rem'
                                 }}
                             />
                         </div>

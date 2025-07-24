@@ -312,6 +312,7 @@ const Cart = () => {
                             cartItems.reduce((acc, item) => acc + parseFloat(item.total_price), 0) -
                             calculateFinalCost,
                         isGiftCard: false,
+                        guestInfo: !user ? currentGuestInfo : null, // Pass guest info for guest users
                     },
                 });
                 setIsProcessing(false);
@@ -443,6 +444,7 @@ const Cart = () => {
                         cartItems.reduce((acc, item) => acc + parseFloat(item.total_price), 0) -
                         calculateFinalCost,
                     isGiftCard: false,
+                    guestInfo: !user ? currentGuestInfo : null, // Pass guest info for guest users
                 },
             });
             setIsProcessing(false);
@@ -695,58 +697,73 @@ const Cart = () => {
                                                         </div>
                                                     )}
 
-                                                    {/* Payment Methods - Same for both logged and guest users */}
-                                                    <div className="flex justify-center gap-4 mb-8">
-                                                        <button
-                                                            onClick={() => handlePaymentMethodChange('paypal')}
-                                                            className={`w-1/2 py-3 rounded-md ${selectedPaymentMethod == 'paypal'
-                                                                ? 'bg-blue-500 text-white'
-                                                                : 'bg-gray-200 text-black'
-                                                                }`}
-                                                            disabled={isProcessing}
-                                                        >
-                                                            PayPal
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handlePaymentMethodChange('stripe')}
-                                                            className={`w-1/2 py-3 rounded-md ${selectedPaymentMethod == 'stripe'
-                                                                ? 'bg-blue-500 text-white'
-                                                                : 'bg-gray-200 text-black'
-                                                                }`}
-                                                            disabled={isProcessing}
-                                                        >
-                                                            Stripe
-                                                        </button>
-                                                    </div>
+                                                    {/* Show payment methods only when guest info is valid or user is logged in */}
+                                                    {(!user && isGuestInfoValid()) || user ? (
+                                                        <>
+                                                            {/* Payment Methods - Same for both logged and guest users */}
+                                                            <div className="flex justify-center gap-4 mb-8">
+                                                                <button
+                                                                    onClick={() => handlePaymentMethodChange('paypal')}
+                                                                    className={`w-1/2 py-3 rounded-md ${selectedPaymentMethod == 'paypal'
+                                                                        ? 'bg-blue-500 text-white'
+                                                                        : 'bg-gray-200 text-black'
+                                                                        }`}
+                                                                    disabled={isProcessing}
+                                                                >
+                                                                    PayPal
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handlePaymentMethodChange('stripe')}
+                                                                    className={`w-1/2 py-3 rounded-md ${selectedPaymentMethod == 'stripe'
+                                                                        ? 'bg-blue-500 text-white'
+                                                                        : 'bg-gray-200 text-black'
+                                                                        }`}
+                                                                    disabled={isProcessing}
+                                                                >
+                                                                    Stripe
+                                                                </button>
+                                                            </div>
 
-                                                    {selectedPaymentMethod == 'paypal' && !isPending && (
-                                                        <PayPalButtons
-                                                            createOrder={createOrder}
-                                                            onApprove={onApprove}
-                                                            onCancel={handleCancel}
-                                                            disabled={isProcessing || (!user && !isGuestInfoValid())}
-                                                        />
-                                                    )}
-                                                    {selectedPaymentMethod == 'paypal' && isPending && (
+                                                            {selectedPaymentMethod == 'paypal' && !isPending && (
+                                                                <PayPalButtons
+                                                                    createOrder={createOrder}
+                                                                    onApprove={onApprove}
+                                                                    onCancel={handleCancel}
+                                                                    disabled={isProcessing}
+                                                                />
+                                                            )}
+                                                            {selectedPaymentMethod == 'paypal' && isPending && (
+                                                                <div className="text-center py-4">
+                                                                    <p>Loading PayPal...</p>
+                                                                </div>
+                                                            )}
+                                                            {selectedPaymentMethod == 'stripe' && (
+                                                                <Elements
+                                                                    stripe={stripePromise}
+                                                                >
+                                                                    <StripePaymentForm
+                                                                        cartItems={cartItems}
+                                                                        finalTotal={Number(calculateFinalCost)}
+                                                                        promoCodeApplied={promoCodeApplied}
+                                                                        calculateFinalCost={calculateFinalCost}
+                                                                        isProcessing={isProcessing}
+                                                                        setIsProcessing={setIsProcessing}
+                                                                        isGuestCheckout={!user}
+                                                                        guestInfo={guestInfo}
+                                                                    />
+                                                                </Elements>
+                                                            )}
+                                                        </>
+                                                    ) : (
                                                         <div className="text-center py-4">
-                                                            <p>Loading PayPal...</p>
+                                                            <p className="text-gray-400 font-THICCCBOI-SemiBold text-base mb-3">Please complete all required guest information above to proceed with payment.</p>
+                                                            {/* <button
+                                                                className="w-full font-Montserrat text-base leading-6 font-normal py-3 px-4 rounded-md text-gray-400 bg-gray-600 cursor-not-allowed"
+                                                                disabled={true}
+                                                            >
+                                                                COMPLETE GUEST INFORMATION
+                                                            </button> */}
                                                         </div>
-                                                    )}
-                                                    {selectedPaymentMethod == 'stripe' && (
-                                                        <Elements
-                                                            stripe={stripePromise}
-                                                        >
-                                                            <StripePaymentForm
-                                                                cartItems={cartItems}
-                                                                finalTotal={Number(calculateFinalCost)}
-                                                                promoCodeApplied={promoCodeApplied}
-                                                                calculateFinalCost={calculateFinalCost}
-                                                                isProcessing={isProcessing}
-                                                                setIsProcessing={setIsProcessing}
-                                                                isGuestCheckout={!user}
-                                                                guestInfo={guestInfo}
-                                                            />
-                                                        </Elements>
                                                     )}
                                                 </>
                                             )}
@@ -829,7 +846,6 @@ const StripePaymentForm = ({
 
 
         try {
-            console.log('Sending Stripe payment data to API:', paymentData);
             const endpoint = user ? 'stripe/pay' : 'stripe/pay/guest';
             const headers = user ? {
                 'Authorization': `Bearer ${getUserToken(user)}`,
@@ -843,24 +859,50 @@ const StripePaymentForm = ({
                 },
             });
 
-            console.log('Stripe API response:', successResponse.data);
-            dispatch(clearCart());
-            navigate(`/order-confirmation/${successResponse.data.order_id}`, {
-                state: {
-                    cartItems,
-                    isPromoCodeApplied: promoCodeApplied ? true : false,
-                    total: finalTotal,
-                    discountAmount:
-                        cartItems.reduce((acc, item) => acc + parseFloat(item.total_price), 0) -
-                        calculateFinalCost,
-                    isGiftCard: false,
-                },
-            });
+            const successPaymentData = {
+                user_id: user ? userInfo.id.toString() : 'guest',
+                transaction_id: paymentData.payment_method_id,
+                amount: paymentData.amount,
+                payer_name: user ? (userInfo.first_name + ' ' + userInfo.last_name) : (paymentData.guest_info.first_name + ' ' + paymentData.guest_info.last_name),
+                payer_email: user ? userInfo.email : paymentData.guest_info.email,
+                payer_phone: user ? (userInfo.phone || '') : paymentData.guest_info.phone,
+                order_type: 'one_time',
+                payment_type: 'one_time',
+                payment_method: 'Stripe',
+                cartItems: cartItems
+              };
+
+            if(successResponse.data.success){
+                const response = await axios.post(API_ENDPOINT + 'success', successPaymentData, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        ...(user && { Authorization: `Bearer ${getUserToken(user)}` }),
+                    },
+                });
+    
+                dispatch(clearCart());
+                navigate(`/order-confirmation/${response.data.order_id}`, {
+                    state: {
+                        cartItems,
+                        isPromoCodeApplied: promoCodeApplied ? true : false,
+                        total: finalTotal,
+                        discountAmount:
+                            cartItems.reduce((acc, item) => acc + parseFloat(item.total_price), 0) -
+                            calculateFinalCost,
+                        isGiftCard: false,
+                        guestInfo: isGuestCheckout ? guestInfo : null, // Pass guest info for guest users
+                    },
+                });
+            } else {
+                return;
+            }
         } catch (apiError) {
             console.error('Stripe payment processing error:', apiError);
             console.error('Error response:', apiError.response?.data);
             setIsProcessing(false);
         }
+
     };
 
     const handleSubmit = async (event) => {
@@ -884,7 +926,6 @@ const StripePaymentForm = ({
                     phone: isGuestCheckout ? guestInfo.phone : (userInfo.phone || ''),
                 },
             });
-            console.log(paymentMethod);
 
             if (paymentMethodError) {
                 setError(paymentMethodError.message);

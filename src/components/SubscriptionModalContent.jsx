@@ -9,6 +9,7 @@ import { selectUserInfo } from '../reducers/userSlice';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
 import { API_ENDPOINT } from '../utils/constants';
+import { getUserToken } from '../reducers/authSlice';
 
 // Initialize Stripe with your publishable key
 const stripePromise = loadStripe('pk_test_51MuE4RJIWkcGZUIabXuoFFrr5gMT5S9Ynq63FfkoZMVeEkq94UdXOKwK4t3msKIsQwnLwafv9JyvzIdKpbsFonwd00BWb4lWdj');
@@ -37,21 +38,25 @@ const SubscriptionModalContent = ({ product, onClose }) => {
 
     useEffect(() => {
         if (user && product?.stripe_plan_id) {
+            console.log(product);
             const fetchClientSecret = async () => {
                 try {
                     const response = await axios.post(API_ENDPOINT + 'stripe/subscribe', {
-                        plan_id: product.stripe_plan_id,
-                        user_email: userInfo.email,
-                        user_name: userInfo.first_name + ' ' + userInfo.last_name
+                        service_id: product.id,
+                        priceId: product.stripe_plan_id,
+                        customerEmail: userInfo.email,
+                        customerName: userInfo.first_name + ' ' + userInfo.last_name
+
                     }, {
                         headers: {
-                            'Authorization': `Bearer ${user}`,
+                            'Authorization': `Bearer ${getUserToken(user)}`,
                         }
                     });
                     setClientSecret(response.data.intent);
                     setSubscriptionId(response.data.subscription_id);
                 } catch (error) {
                     // Handle error silently
+                    console.log(error);
                 }
             };
 
@@ -110,7 +115,7 @@ const SubscriptionModalContent = ({ product, onClose }) => {
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        ...(user && { Authorization: `Bearer ${user}` }),
+                        ...(user && { Authorization: `Bearer ${getUserToken(user)}` }),
                     }
                 });
 
@@ -315,7 +320,7 @@ const StripeSubscriptionForm = ({ product, userInfo, onClose, navigate, isProces
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'Authorization': `Bearer ${user}`,
+                            'Authorization': `Bearer ${getUserToken(user)}`,
                         }
                     });
 
