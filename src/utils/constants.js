@@ -3,8 +3,8 @@
 // export const API_ENDPOINT = "https://backend.zetdigitesting.online/api/";
 // export const DOMAIN = "https://backend.zetdigitesting.online/"
 
-// export const API_ENDPOINT = "http://127.0.0.1:3000/api/";
-// export const DOMAIN = "http://127.0.0.1:3000/public";
+// export const API_ENDPOINT = "/api/";
+// export const DOMAIN = "http://127.0.0.1:3000/";
 
 export const API_ENDPOINT = "https://audio-mixing-master-backend-node.onrender.com/api/";
 export const DOMAIN = "https://audio-mixing-master-backend-node.onrender.com/"
@@ -13,6 +13,9 @@ export const DOMAIN = "https://audio-mixing-master-backend-node.onrender.com/"
 export const itemsPerPage = 10;
 
 // export const API_ENDPOINT = "https://backend.audiomixingmastering.com/api/";
+// export const DOMAIN = "https://backend.audiomixingmastering.com/";
+
+// export const API_ENDPOINT = "https://back.audiomixingmastering.com/api/";
 // export const DOMAIN = "https://backend.audiomixingmastering.com/";
 
 export const ORDER_STATUS = {
